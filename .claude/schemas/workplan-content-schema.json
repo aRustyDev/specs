@@ -1,0 +1,660 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Work Plan Content Schema",
+  "description": "Complete content specification for generating narrative work plans",
+  "type": "object",
+  "required": ["phase", "prerequisites", "resources", "overview", "methodology", "done_criteria", "work_breakdown"],
+  "properties": {
+    "phase": {
+      "type": "object",
+      "required": ["number", "title", "focus", "narrative_overview", "critical_requirements"],
+      "properties": {
+        "number": {
+          "type": "integer",
+          "description": "Phase number (1-10)"
+        },
+        "title": {
+          "type": "string",
+          "description": "Phase title (e.g., 'Foundation & Core Infrastructure')"
+        },
+        "focus": {
+          "type": "string",
+          "description": "Primary technical focus area"
+        },
+        "narrative_overview": {
+          "type": "string",
+          "description": "Full paragraph explaining phase purpose and approach"
+        },
+        "critical_requirements": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Non-negotiable requirements for this phase"
+        }
+      }
+    },
+    "prerequisites": {
+      "type": "object",
+      "required": ["intro_narrative", "completed_phases", "knowledge_areas"],
+      "properties": {
+        "intro_narrative": {
+          "type": "string",
+          "description": "Introductory text for prerequisites section"
+        },
+        "completed_phases": {
+          "type": "object",
+          "properties": {
+            "required": {
+              "type": "string",
+              "description": "Phase numbers required (e.g., '1-3')"
+            },
+            "descriptions": {
+              "type": "string",
+              "description": "What those phases should have accomplished"
+            }
+          }
+        },
+        "knowledge_areas": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["area", "description", "importance"],
+            "properties": {
+              "area": {
+                "type": "string",
+                "description": "Knowledge area name"
+              },
+              "description": {
+                "type": "string",
+                "description": "What specifically needs to be understood"
+              },
+              "importance": {
+                "type": "string",
+                "enum": ["Essential", "Recommended", "Helpful"],
+                "description": "How critical this knowledge is"
+              }
+            }
+          }
+        }
+      }
+    },
+    "resources": {
+      "type": "object",
+      "required": ["intro_narrative", "example_files", "specifications", "junior_dev_guides", "quick_links"],
+      "properties": {
+        "intro_narrative": {
+          "type": "string",
+          "description": "Introduction to available resources"
+        },
+        "example_files": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "path", "description", "purpose"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string",
+                "description": "Why this example is important"
+              }
+            }
+          }
+        },
+        "specifications": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "path", "description", "key_sections"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "key_sections": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "junior_dev_guides": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "path", "description", "when_to_read"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "when_to_read": {
+                "type": "string",
+                "description": "When in the process this guide is most helpful"
+              }
+            }
+          }
+        },
+        "quick_links": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "command", "purpose"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "command": {
+                "type": "string"
+              },
+              "purpose": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "overview": {
+      "type": "object",
+      "required": ["narrative", "checkpoint_summary", "time_estimate"],
+      "properties": {
+        "narrative": {
+          "type": "string",
+          "description": "Full paragraph explaining the work plan structure"
+        },
+        "checkpoint_summary": {
+          "type": "string",
+          "description": "Brief explanation of checkpoint strategy"
+        },
+        "time_estimate": {
+          "type": "string",
+          "description": "Realistic time estimate with caveats"
+        }
+      }
+    },
+    "build_commands": {
+      "type": "object",
+      "required": ["tool", "intro_narrative", "commands"],
+      "properties": {
+        "tool": {
+          "type": "string",
+          "description": "Build tool used (e.g., 'just')"
+        },
+        "intro_narrative": {
+          "type": "string",
+          "description": "Explanation of build system"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["command", "description", "when_to_use"],
+            "properties": {
+              "command": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "when_to_use": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "review_process": {
+      "type": "object",
+      "required": ["importance_narrative", "checkpoint_count", "review_timeout_hours", "checkpoint_procedure"],
+      "properties": {
+        "importance_narrative": {
+          "type": "string",
+          "description": "Why reviews are critical"
+        },
+        "checkpoint_count": {
+          "type": "integer"
+        },
+        "review_timeout_hours": {
+          "type": "integer"
+        },
+        "checkpoint_procedure": {
+          "type": "object",
+          "required": ["stop_instructions", "review_preparation", "wait_instructions"],
+          "properties": {
+            "stop_instructions": {
+              "type": "string"
+            },
+            "review_preparation": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "wait_instructions": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "methodology": {
+      "type": "object",
+      "required": ["approach", "importance_narrative", "rules"],
+      "properties": {
+        "approach": {
+          "type": "string",
+          "description": "Development methodology (e.g., 'Test-Driven Development')"
+        },
+        "importance_narrative": {
+          "type": "string",
+          "description": "Why this methodology matters for this phase"
+        },
+        "rules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["step", "description", "rationale"],
+            "properties": {
+              "step": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string"
+              },
+              "rationale": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "done_criteria": {
+      "type": "object",
+      "required": ["intro_narrative", "checklist"],
+      "properties": {
+        "intro_narrative": {
+          "type": "string"
+        },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["criterion", "verification_method"],
+            "properties": {
+              "criterion": {
+                "type": "string"
+              },
+              "verification_method": {
+                "type": "string",
+                "description": "How to verify this criterion is met"
+              }
+            }
+          }
+        }
+      }
+    },
+    "work_breakdown": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["section_number", "title", "work_unit_context", "tasks", "checkpoint"],
+        "properties": {
+          "section_number": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "work_unit_context": {
+            "type": "object",
+            "required": ["complexity", "complexity_reason", "scope", "key_components", "patterns"],
+            "properties": {
+              "complexity": {
+                "type": "string",
+                "enum": ["Low", "Medium", "High"]
+              },
+              "complexity_reason": {
+                "type": "string"
+              },
+              "scope": {
+                "type": "object",
+                "properties": {
+                  "estimated_lines": {
+                    "type": "string"
+                  },
+                  "file_count": {
+                    "type": "string"
+                  }
+                }
+              },
+              "key_components": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "estimated_lines": {
+                      "type": "string"
+                    },
+                    "purpose": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "patterns": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "algorithms": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["number", "title", "description"],
+              "properties": {
+                "number": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Full narrative task description"
+                },
+                "tdd_instructions": {
+                  "type": "string",
+                  "description": "Specific TDD guidance for this task"
+                },
+                "tips": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "type": {
+                        "type": "string",
+                        "enum": ["junior_dev", "warning", "security", "performance"]
+                      },
+                      "content": {
+                        "type": "string"
+                      },
+                      "resource_link": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "code_examples": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": ["purpose", "language", "code", "explanation"],
+                    "properties": {
+                      "purpose": {
+                        "type": "string"
+                      },
+                      "language": {
+                        "type": "string"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "explanation": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "special_considerations": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          },
+          "checkpoint": {
+            "type": "object",
+            "required": ["number", "title", "stop_message", "deliverables", "verification_steps"],
+            "properties": {
+              "number": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "stop_message": {
+                "type": "string"
+              },
+              "deliverables": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "verification_steps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "common_issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "issue": {
+                      "type": "string"
+                    },
+                    "solution": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "troubleshooting": {
+      "type": "object",
+      "required": ["intro_narrative", "common_issues", "escalation_path"],
+      "properties": {
+        "intro_narrative": {
+          "type": "string"
+        },
+        "common_issues": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["category", "issues"],
+            "properties": {
+              "category": {
+                "type": "string"
+              },
+              "issues": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "symptom": {
+                      "type": "string"
+                    },
+                    "cause": {
+                      "type": "string"
+                    },
+                    "solution": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "escalation_path": {
+          "type": "object",
+          "properties": {
+            "when_stuck": {
+              "type": "string"
+            },
+            "documentation_requirements": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "security_requirements": {
+      "type": "object",
+      "required": ["importance_narrative", "categories"],
+      "properties": {
+        "importance_narrative": {
+          "type": "string"
+        },
+        "categories": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "requirements", "implementation_guidance"],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "requirements": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "enum": ["MUST", "MUST NOT", "SHOULD"]
+                    },
+                    "requirement": {
+                      "type": "string"
+                    },
+                    "rationale": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "implementation_guidance": {
+                "type": "string"
+              },
+              "testing_approach": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    "learning_path": {
+      "type": "object",
+      "required": ["target_audience", "intro_narrative", "progression"],
+      "properties": {
+        "target_audience": {
+          "type": "string"
+        },
+        "intro_narrative": {
+          "type": "string"
+        },
+        "progression": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["step", "focus", "resources", "estimated_time", "practical_exercise"],
+            "properties": {
+              "step": {
+                "type": "integer"
+              },
+              "focus": {
+                "type": "string"
+              },
+              "resources": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "estimated_time": {
+                "type": "string"
+              },
+              "practical_exercise": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "key_warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "next_phase": {
+      "type": "object",
+      "required": ["number", "title", "preview_narrative"],
+      "properties": {
+        "number": {
+          "type": "integer"
+        },
+        "title": {
+          "type": "string"
+        },
+        "preview_narrative": {
+          "type": "string"
+        },
+        "key_features": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,1060 @@
+{
+  "phase": {
+    "number": 5,
+    "title": "Observability & Monitoring",
+    "focus": "Metrics, Logging, and Distributed Tracing",
+    "narrative_overview": "This phase transforms the PCF API into a fully observable system by implementing comprehensive metrics collection, structured logging, and distributed tracing. The focus is on providing deep insights into system behavior while maintaining strict security boundaries and minimal performance impact. Every component will emit telemetry data that enables proactive monitoring, rapid debugging, and data-driven optimization.",
+    "critical_requirements": [
+      "No sensitive data (PII, passwords, tokens) in any telemetry output",
+      "Cardinality limits enforced to prevent metric explosion",
+      "Performance overhead must remain below 5% in production workloads",
+      "All telemetry data must include trace context for correlation"
+    ]
+  },
+  "prerequisites": {
+    "intro_narrative": "Before implementing observability, ensure the foundation is solid and ready for instrumentation:",
+    "completed_phases": {
+      "required": "1-4",
+      "descriptions": "Server foundation with health checks, database layer with connection pooling, GraphQL API with resolvers, and authorization with SpiceDB integration"
+    },
+    "knowledge_areas": [
+      {
+        "area": "Metrics and Time Series Data",
+        "description": "Understanding of Prometheus metrics types (counters, gauges, histograms), cardinality implications, and aggregation patterns",
+        "importance": "Essential"
+      },
+      {
+        "area": "Distributed Tracing Concepts",
+        "description": "Familiarity with spans, trace context propagation, sampling strategies, and OpenTelemetry standards",
+        "importance": "Essential"
+      },
+      {
+        "area": "Structured Logging",
+        "description": "Experience with JSON logging, log levels, contextual fields, and security considerations for log data",
+        "importance": "Essential"
+      },
+      {
+        "area": "Performance Profiling",
+        "description": "Basic understanding of profiling tools, overhead measurement, and optimization techniques",
+        "importance": "Recommended"
+      }
+    ]
+  },
+  "resources": {
+    "intro_narrative": "All resources are organized to support both implementation and learning:",
+    "example_files": [
+      {
+        "name": "tdd-test-structure.rs",
+        "path": "../../.spec/examples/tdd-test-structure.rs",
+        "description": "Comprehensive test examples following TDD methodology",
+        "purpose": "Provides the testing patterns that should be followed throughout this phase"
+      },
+      {
+        "name": "metrics-patterns.rs",
+        "path": "../../.spec/examples/metrics-patterns.rs",
+        "description": "Prometheus metrics implementation patterns with cardinality control",
+        "purpose": "Shows proper metric design to avoid cardinality explosion"
+      },
+      {
+        "name": "tracing-patterns.rs",
+        "path": "../../.spec/examples/tracing-patterns.rs",
+        "description": "OpenTelemetry tracing examples with context propagation",
+        "purpose": "Demonstrates span creation and trace context management"
+      },
+      {
+        "name": "log-sanitization.rs",
+        "path": "../../.spec/examples/log-sanitization.rs",
+        "description": "Security-focused log sanitization patterns",
+        "purpose": "Critical for preventing sensitive data leakage in logs"
+      }
+    ],
+    "specifications": [
+      {
+        "name": "metrics.md",
+        "path": "../../.spec/metrics.md",
+        "description": "Complete metrics specification with cardinality guidelines",
+        "key_sections": ["Metric Types", "Naming Conventions", "Cardinality Limits", "Dashboard Requirements"]
+      },
+      {
+        "name": "logging.md",
+        "path": "../../.spec/logging.md",
+        "description": "Logging standards and sanitization requirements",
+        "key_sections": ["Log Levels", "Structured Format", "Security Rules", "Retention Policies"]
+      },
+      {
+        "name": "tracing.md",
+        "path": "../../.spec/tracing.md",
+        "description": "Distributed tracing requirements and patterns",
+        "key_sections": ["Span Attributes", "Sampling Configuration", "Context Propagation", "Performance Budgets"]
+      }
+    ],
+    "junior_dev_guides": [
+      {
+        "name": "Observability Tutorial",
+        "path": "../../junior-dev-helper/observability-tutorial.md",
+        "description": "Introduction to the three pillars of observability",
+        "when_to_read": "Before starting any implementation"
+      },
+      {
+        "name": "Prometheus Metrics Guide",
+        "path": "../../junior-dev-helper/prometheus-metrics-guide.md",
+        "description": "Deep dive into metric types, labels, and best practices",
+        "when_to_read": "Before implementing Section 5.1"
+      },
+      {
+        "name": "Cardinality Control Guide",
+        "path": "../../junior-dev-helper/cardinality-control-guide.md",
+        "description": "Critical guide on preventing metric explosion",
+        "when_to_read": "Before adding ANY metric labels"
+      },
+      {
+        "name": "Structured Logging Guide",
+        "path": "../../junior-dev-helper/structured-logging-guide.md",
+        "description": "JSON logging patterns and security considerations",
+        "when_to_read": "Before implementing Section 5.2"
+      },
+      {
+        "name": "OpenTelemetry Tracing Guide",
+        "path": "../../junior-dev-helper/opentelemetry-tracing-guide.md",
+        "description": "Distributed tracing concepts and implementation",
+        "when_to_read": "Before implementing Section 5.3"
+      },
+      {
+        "name": "Common Observability Errors",
+        "path": "../../junior-dev-helper/observability-common-errors.md",
+        "description": "Troubleshooting guide for metrics, logs, and traces",
+        "when_to_read": "When encountering issues"
+      }
+    ],
+    "quick_links": [
+      {
+        "name": "Verification Script",
+        "command": "scripts/verify-phase-5.sh",
+        "purpose": "Validates all observability components are working"
+      },
+      {
+        "name": "Metrics Dashboard",
+        "command": "just metrics-up && just grafana-up",
+        "purpose": "Starts local Prometheus and Grafana for testing"
+      },
+      {
+        "name": "Trace Viewer",
+        "command": "just jaeger-up",
+        "purpose": "Starts Jaeger UI for viewing distributed traces"
+      }
+    ]
+  },
+  "overview": {
+    "narrative": "This work plan implements comprehensive observability across the PCF API in four carefully sequenced checkpoints. Each checkpoint builds upon the previous one, starting with metrics collection, then structured logging, followed by distributed tracing, and concluding with dashboard creation and performance validation. The plan emphasizes security (no sensitive data in telemetry), reliability (cardinality control), and performance (minimal overhead).",
+    "checkpoint_summary": "Four checkpoints divide the work at natural boundaries: after metrics setup, after logging implementation, after tracing integration, and after dashboard/alerting setup. Each checkpoint includes specific verification steps and deliverables.",
+    "time_estimate": "3-4 weeks for an experienced developer, 5-6 weeks for someone new to observability. Add 1 week if creating custom dashboards or complex alerting rules."
+  },
+  "build_commands": {
+    "tool": "just",
+    "intro_narrative": "This project uses `just` as the command runner to ensure consistency across environments. All commands include proper configuration and dependencies:",
+    "commands": [
+      {
+        "command": "test",
+        "description": "Run all tests including observability-specific test suites",
+        "when_to_use": "After any code changes to verify nothing is broken"
+      },
+      {
+        "command": "test-metrics",
+        "description": "Run only metrics-related tests",
+        "when_to_use": "When working on Section 5.1"
+      },
+      {
+        "command": "test-logging",
+        "description": "Run only logging-related tests",
+        "when_to_use": "When working on Section 5.2"
+      },
+      {
+        "command": "test-tracing",
+        "description": "Run only tracing-related tests",
+        "when_to_use": "When working on Section 5.3"
+      },
+      {
+        "command": "metrics-up",
+        "description": "Start local Prometheus with pre-configured scraping",
+        "when_to_use": "To verify metrics are being collected correctly"
+      },
+      {
+        "command": "grafana-up",
+        "description": "Start Grafana with provisioned dashboards",
+        "when_to_use": "To visualize metrics and test dashboards"
+      },
+      {
+        "command": "jaeger-up",
+        "description": "Start Jaeger for trace visualization",
+        "when_to_use": "To verify distributed tracing is working"
+      }
+    ]
+  },
+  "review_process": {
+    "importance_narrative": "This plan includes 4 mandatory review checkpoints where work MUST stop for external review. These checkpoints prevent cascading issues and ensure each observability layer is properly implemented before building the next. Observability code is particularly prone to production issues (cardinality explosion, performance degradation) if not reviewed carefully.",
+    "checkpoint_count": 4,
+    "review_timeout_hours": 24,
+    "checkpoint_procedure": {
+      "stop_instructions": "STOP all work and commit your code with a descriptive message",
+      "review_preparation": [
+        "Run all tests for the completed section",
+        "Verify deliverables match the checkpoint requirements",
+        "Document any deviations or blockers encountered",
+        "Prepare specific questions if you need clarification",
+        "Create checkpoint documentation in .claude/.reviews/"
+      ],
+      "wait_instructions": "DO NOT PROCEED to the next section until you receive explicit approval. Use wait time to review upcoming sections or study relevant guides."
+    }
+  },
+  "methodology": {
+    "approach": "Test-Driven Development (TDD)",
+    "importance_narrative": "TDD is especially critical for observability because telemetry code must work reliably even when the system is failing. Writing tests first ensures we verify the observability data we expect to see before implementing the instrumentation.",
+    "rules": [
+      {
+        "step": "Write tests FIRST",
+        "description": "Before implementing any metric, log, or span, write a test that verifies the expected output",
+        "rationale": "Observability code is hard to test after implementation; tests ensure we're measuring what we think we're measuring"
+      },
+      {
+        "step": "Run tests to see them FAIL",
+        "description": "Confirm the test actually detects the missing telemetry",
+        "rationale": "A test that passes before implementation is testing the wrong thing"
+      },
+      {
+        "step": "Write minimal code to make tests PASS",
+        "description": "Implement just enough instrumentation to satisfy the test",
+        "rationale": "Prevents over-instrumentation which can impact performance"
+      },
+      {
+        "step": "REFACTOR for clarity and performance",
+        "description": "Optimize hot paths and ensure telemetry code is maintainable",
+        "rationale": "Observability code runs frequently and must have minimal overhead"
+      },
+      {
+        "step": "Document telemetry semantics",
+        "description": "Add clear documentation about what each metric/log/span represents",
+        "rationale": "Future developers need to understand the meaning of telemetry data"
+      }
+    ]
+  },
+  "done_criteria": {
+    "intro_narrative": "Phase 5 is complete when all observability pillars are operational and verified:",
+    "checklist": [
+      {
+        "criterion": "/metrics endpoint returns valid Prometheus format",
+        "verification_method": "curl localhost:8080/metrics | promtool check metrics"
+      },
+      {
+        "criterion": "User-facing operations emit structured logs with trace IDs",
+        "verification_method": "Make API calls and verify JSON logs contain trace_id field"
+      },
+      {
+        "criterion": "Infrastructure operations have basic logging",
+        "verification_method": "Check logs for startup, shutdown, and health check events"
+      },
+      {
+        "criterion": "Distributed tracing spans for significant operations",
+        "verification_method": "View traces in Jaeger UI, verify parent-child relationships"
+      },
+      {
+        "criterion": "No sensitive data in any telemetry output",
+        "verification_method": "Run security scan script: just scan-telemetry-security"
+      },
+      {
+        "criterion": "Monitoring dashboards created and functional",
+        "verification_method": "Access Grafana dashboards, verify data is populating"
+      },
+      {
+        "criterion": "Cardinality limits enforced",
+        "verification_method": "Run cardinality test: just test-metrics-cardinality"
+      },
+      {
+        "criterion": "Performance impact <5% overhead",
+        "verification_method": "Run benchmarks with/without telemetry: just bench-overhead"
+      },
+      {
+        "criterion": "All code has corresponding tests written first",
+        "verification_method": "Review git history to confirm test-first approach"
+      }
+    ]
+  },
+  "work_breakdown": [
+    {
+      "section_number": "5.1",
+      "title": "Metrics Implementation",
+      "work_unit_context": {
+        "complexity": "Medium",
+        "complexity_reason": "Cardinality control and performance optimization require careful design",
+        "scope": {
+          "estimated_lines": "~800 lines",
+          "file_count": "6-7 files"
+        },
+        "key_components": [
+          {
+            "name": "Prometheus recorder setup",
+            "estimated_lines": "~150",
+            "purpose": "Configure PrometheusBuilder with cardinality limits and buckets"
+          },
+          {
+            "name": "Core metrics implementation",
+            "estimated_lines": "~300",
+            "purpose": "HTTP, GraphQL, database, and system metrics"
+          },
+          {
+            "name": "Cardinality limiter",
+            "estimated_lines": "~200",
+            "purpose": "Prevent metric explosion through label limiting"
+          },
+          {
+            "name": "Metrics endpoint",
+            "estimated_lines": "~100",
+            "purpose": "Expose /metrics with proper security"
+          },
+          {
+            "name": "Performance sampling",
+            "estimated_lines": "~50",
+            "purpose": "Reduce overhead for high-frequency operations"
+          }
+        ],
+        "patterns": ["Builder pattern for recorder", "Lazy static initialization", "Label sanitization"],
+        "algorithms": ["Exponential histogram buckets", "Reservoir sampling for high-cardinality data"]
+      },
+      "tasks": [
+        {
+          "number": "5.1.1",
+          "title": "Write Metrics Registry Tests First",
+          "description": "Following TDD, start by writing comprehensive tests for the metrics registry. These tests will verify metric registration, label validation, and cardinality limits. The tests should fail initially, driving the implementation of the registry.",
+          "tdd_instructions": "Create tests that verify: metric names follow conventions, labels are properly sanitized, cardinality limits are enforced, and metrics can be retrieved. Use the pattern from tdd-test-structure.rs.",
+          "tips": [
+            {
+              "type": "junior_dev",
+              "content": "Start with the Prometheus Metrics Guide to understand metric types before writing tests",
+              "resource_link": "../../junior-dev-helper/prometheus-metrics-guide.md"
+            },
+            {
+              "type": "warning",
+              "content": "CRITICAL: Read the Cardinality Control Guide before adding any labels to metrics",
+              "resource_link": "../../junior-dev-helper/cardinality-control-guide.md"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Test structure for metrics registry",
+              "language": "rust",
+              "code": "#[cfg(test)]\nmod metrics_registry_tests {\n    use super::*;\n    use prometheus::{Counter, Histogram};\n\n    #[test]\n    fn test_metric_registration_with_cardinality_limit() {\n        // Arrange\n        let registry = MetricsRegistry::new()\n            .with_cardinality_limit(1000)\n            .build();\n        \n        // Act\n        let result = registry.register_counter(\n            \"api_requests_total\",\n            \"Total API requests\",\n            &[\"method\", \"endpoint\", \"status\"]\n        );\n        \n        // Assert\n        assert!(result.is_ok());\n        let counter = result.unwrap();\n        \n        // Verify cardinality limits\n        for i in 0..1001 {\n            let labels = vec![\n                (\"method\", \"GET\"),\n                (\"endpoint\", &format!(\"/test/{}\", i)),\n                (\"status\", \"200\")\n            ];\n            \n            if i < 1000 {\n                assert!(counter.record_with_labels(&labels).is_ok());\n            } else {\n                // Should reject after limit\n                assert!(counter.record_with_labels(&labels).is_err());\n            }\n        }\n    }\n}",
+              "explanation": "This test verifies that our metrics registry enforces cardinality limits. It attempts to create more label combinations than allowed and verifies the registry correctly rejects them after the limit."
+            }
+          ],
+          "special_considerations": [
+            "Metrics must follow Prometheus naming conventions (snake_case, descriptive suffixes)",
+            "Consider using metric families to group related metrics",
+            "Plan for both application and infrastructure metrics"
+          ]
+        },
+        {
+          "number": "5.1.2",
+          "title": "Implement Prometheus Recorder with Cardinality Control",
+          "description": "Now implement the Prometheus recorder to make the tests pass. Focus on setting up the PrometheusBuilder with appropriate configuration, implementing cardinality limiting, and ensuring thread-safe access to metrics.",
+          "tdd_instructions": "Implement only enough code to make the registry tests pass. Start with basic registration, then add cardinality limiting.",
+          "tips": [
+            {
+              "type": "performance",
+              "content": "Use lazy_static or OnceCell for metric initialization to avoid runtime overhead"
+            },
+            {
+              "type": "security",
+              "content": "Never include user IDs, emails, or other PII as metric labels"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Prometheus recorder setup with cardinality limits",
+              "language": "rust",
+              "code": "use prometheus::{Registry, Encoder, TextEncoder};\nuse std::sync::Arc;\nuse parking_lot::RwLock;\n\npub struct MetricsRecorder {\n    registry: Registry,\n    cardinality_limiter: Arc<RwLock<CardinalityLimiter>>,\n}\n\nimpl MetricsRecorder {\n    pub fn new() -> Result<Self, MetricsError> {\n        let registry = Registry::new();\n        \n        // Register default metrics\n        let process_collector = prometheus::process_collector::ProcessCollector::for_self();\n        registry.register(Box::new(process_collector))?;\n        \n        let limiter = Arc::new(RwLock::new(\n            CardinalityLimiter::new(1000) // Default limit\n        ));\n        \n        Ok(Self {\n            registry,\n            cardinality_limiter: limiter,\n        })\n    }\n    \n    pub fn register_counter(\n        &self,\n        name: &str,\n        help: &str,\n        labels: &[&str],\n    ) -> Result<CardinalityLimitedCounter, MetricsError> {\n        let counter = CounterVec::new(\n            Opts::new(name, help),\n            labels\n        )?;\n        \n        self.registry.register(Box::new(counter.clone()))?;\n        \n        Ok(CardinalityLimitedCounter {\n            inner: counter,\n            limiter: self.cardinality_limiter.clone(),\n        })\n    }\n}",
+              "explanation": "This implementation provides a thread-safe metrics recorder with built-in cardinality limiting. The CardinalityLimiter is shared across all metrics to enforce global limits."
+            }
+          ]
+        },
+        {
+          "number": "5.1.3",
+          "title": "Add Core Application Metrics",
+          "description": "Implement the essential metrics for monitoring application health: HTTP request metrics (duration, status, method), GraphQL operation metrics (type, complexity, errors), Database query metrics (duration, pool stats), and System resource metrics (CPU, memory, connections).",
+          "tdd_instructions": "Write tests for each metric type first, verifying correct labels and appropriate bucket boundaries for histograms.",
+          "tips": [
+            {
+              "type": "junior_dev",
+              "content": "Use the metrics-patterns.rs example file for standard metric implementations",
+              "resource_link": "../../.spec/examples/metrics-patterns.rs"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "HTTP request duration histogram",
+              "language": "rust",
+              "code": "lazy_static! {\n    static ref HTTP_REQUEST_DURATION: HistogramVec = register_histogram_vec!(\n        \"http_request_duration_seconds\",\n        \"HTTP request latencies in seconds\",\n        &[\"method\", \"endpoint\", \"status_group\"],\n        // Buckets optimized for web API latencies\n        vec![0.001, 0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0]\n    ).unwrap();\n}\n\n// Middleware to record metrics\npub async fn metrics_middleware<B>(\n    req: Request<B>,\n    next: Next<B>,\n) -> Result<Response, Error> {\n    let start = Instant::now();\n    let method = req.method().to_string();\n    let path = normalize_path(req.uri().path()); // Normalize to prevent explosion\n    \n    let response = next.run(req).await;\n    let elapsed = start.elapsed().as_secs_f64();\n    \n    let status_group = match response.status().as_u16() {\n        200..=299 => \"2xx\",\n        300..=399 => \"3xx\",\n        400..=499 => \"4xx\",\n        500..=599 => \"5xx\",\n        _ => \"other\",\n    };\n    \n    HTTP_REQUEST_DURATION\n        .with_label_values(&[&method, &path, status_group])\n        .observe(elapsed);\n    \n    Ok(response)\n}",
+              "explanation": "This middleware records HTTP request durations with normalized paths to prevent cardinality explosion. Status codes are grouped to reduce label combinations."
+            }
+          ]
+        }
+      ],
+      "checkpoint": {
+        "number": 1,
+        "title": "Metrics Implementation Review",
+        "stop_message": "🛑 CHECKPOINT 1: Metrics Implementation Review - STOP and request review before proceeding",
+        "deliverables": [
+          "Prometheus recorder with cardinality limiting",
+          "Core application metrics (HTTP, GraphQL, Database)",
+          "Metrics endpoint at /metrics",
+          "All metrics tests passing",
+          "Cardinality verification script results"
+        ],
+        "verification_steps": [
+          "Run `just test-metrics` - all tests should pass",
+          "Start server and access http://localhost:8080/metrics",
+          "Verify Prometheus format with `curl localhost:8080/metrics | promtool check metrics`",
+          "Run cardinality check: `just check-metrics-cardinality`",
+          "Ensure no PII in metric labels"
+        ],
+        "common_issues": [
+          {
+            "issue": "Metrics endpoint returns 404",
+            "solution": "Ensure metrics route is registered in router configuration"
+          },
+          {
+            "issue": "Cardinality limit exceeded errors",
+            "solution": "Review label combinations, use label normalization, group similar values"
+          },
+          {
+            "issue": "High memory usage from metrics",
+            "solution": "Reduce histogram buckets, implement metric expiry for unused series"
+          }
+        ]
+      }
+    },
+    {
+      "section_number": "5.2",
+      "title": "Structured Logging Implementation",
+      "work_unit_context": {
+        "complexity": "Medium",
+        "complexity_reason": "Security-critical sanitization and performance-sensitive hot paths",
+        "scope": {
+          "estimated_lines": "~600 lines",
+          "file_count": "5-6 files"
+        },
+        "key_components": [
+          {
+            "name": "Tracing subscriber setup",
+            "estimated_lines": "~100",
+            "purpose": "Configure structured JSON logging with appropriate layers"
+          },
+          {
+            "name": "Log sanitization layer",
+            "estimated_lines": "~200",
+            "purpose": "Remove sensitive data before output"
+          },
+          {
+            "name": "Context injection",
+            "estimated_lines": "~150",
+            "purpose": "Add trace IDs and request context to all logs"
+          },
+          {
+            "name": "Performance logging",
+            "estimated_lines": "~100",
+            "purpose": "Efficient logging for hot paths"
+          },
+          {
+            "name": "Log sampling",
+            "estimated_lines": "~50",
+            "purpose": "Reduce volume while maintaining visibility"
+          }
+        ],
+        "patterns": ["Layer composition", "Visitor pattern for sanitization", "Context propagation"],
+        "algorithms": ["Regex-based sanitization", "Dynamic sampling based on log level"]
+      },
+      "tasks": [
+        {
+          "number": "5.2.1",
+          "title": "Write Log Sanitization Tests First",
+          "description": "Create comprehensive tests for log sanitization that verify sensitive data is properly removed or masked. Tests should cover various data types including passwords, tokens, API keys, emails, credit card numbers, and social security numbers.",
+          "tdd_instructions": "Write tests that attempt to log sensitive data and verify it's properly sanitized in the output. Include edge cases like nested JSON and URL parameters.",
+          "tips": [
+            {
+              "type": "security",
+              "content": "Review the log-sanitization.rs example for comprehensive patterns",
+              "resource_link": "../../.spec/examples/log-sanitization.rs"
+            },
+            {
+              "type": "warning",
+              "content": "Sanitization must work even if the regex engine fails - always fail closed"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Log sanitization test cases",
+              "language": "rust",
+              "code": "#[cfg(test)]\nmod log_sanitization_tests {\n    use super::*;\n    use tracing_test::traced_test;\n    \n    #[traced_test]\n    #[test]\n    fn test_password_sanitization() {\n        // Arrange\n        let sensitive_data = json!({\n            \"user\": \"john@example.com\",\n            \"password\": \"super-secret-123\",\n            \"api_key\": \"sk_live_abcd1234\",\n            \"credit_card\": \"4111-1111-1111-1111\"\n        });\n        \n        // Act\n        tracing::info!(data = ?sensitive_data, \"User login attempt\");\n        \n        // Assert\n        let logs = logs_contain(\"User login attempt\");\n        assert!(logs.len() > 0);\n        \n        let log_output = &logs[0];\n        assert!(!log_output.contains(\"super-secret-123\"));\n        assert!(!log_output.contains(\"sk_live_abcd1234\"));\n        assert!(!log_output.contains(\"4111-1111-1111-1111\"));\n        \n        // Should contain sanitized versions\n        assert!(log_output.contains(\"password\\\":\\\"[REDACTED]\"));\n        assert!(log_output.contains(\"api_key\\\":\\\"sk_live_[REDACTED]\"));\n        assert!(log_output.contains(\"credit_card\\\":\\\"****-****-****-1111\"));\n    }\n}",
+              "explanation": "This test verifies that sensitive data is properly sanitized before being written to logs. Different data types require different sanitization strategies."
+            }
+          ]
+        },
+        {
+          "number": "5.2.2",
+          "title": "Implement Structured Logging with Tracing",
+          "description": "Set up the tracing subscriber with JSON formatting, implement the sanitization layer to make tests pass, and configure appropriate log levels for different components. Ensure all logs include trace context for correlation with distributed traces.",
+          "tdd_instructions": "Focus on making the sanitization tests pass first, then add context injection and performance optimizations.",
+          "tips": [
+            {
+              "type": "junior_dev",
+              "content": "Study the Structured Logging Guide for JSON formatting patterns",
+              "resource_link": "../../junior-dev-helper/structured-logging-guide.md"
+            },
+            {
+              "type": "performance",
+              "content": "Use tracing's span fields instead of formatting strings in hot paths"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Tracing subscriber with sanitization layer",
+              "language": "rust",
+              "code": "use tracing_subscriber::{\n    layer::SubscriberExt,\n    util::SubscriberInitExt,\n    EnvFilter, Registry,\n};\n\npub fn init_tracing(config: &ObservabilityConfig) -> Result<(), TracingError> {\n    let env_filter = EnvFilter::try_from_default_env()\n        .unwrap_or_else(|_| EnvFilter::new(\"info\"));\n    \n    // JSON formatting layer\n    let json_layer = tracing_subscriber::fmt::layer()\n        .json()\n        .with_current_span(true)\n        .with_span_list(true)\n        .with_target(true)\n        .with_thread_ids(true)\n        .with_thread_names(true);\n    \n    // Sanitization layer\n    let sanitize_layer = SanitizationLayer::new()\n        .add_pattern(SensitivePattern::Password)\n        .add_pattern(SensitivePattern::ApiKey)\n        .add_pattern(SensitivePattern::CreditCard)\n        .add_pattern(SensitivePattern::Email)\n        .add_pattern(SensitivePattern::IpAddress);\n    \n    // Context injection layer\n    let context_layer = ContextInjectionLayer::new();\n    \n    // Compose layers\n    Registry::default()\n        .with(env_filter)\n        .with(context_layer)\n        .with(sanitize_layer)\n        .with(json_layer)\n        .init();\n    \n    Ok(())\n}\n\n// Sanitization layer implementation\npub struct SanitizationLayer {\n    patterns: Vec<SensitivePattern>,\n}\n\nimpl<S> Layer<S> for SanitizationLayer\nwhere\n    S: Subscriber,\n{\n    type Subscriber = SanitizingSubscriber<S>;\n    \n    fn layer(&self, inner: S) -> Self::Subscriber {\n        SanitizingSubscriber {\n            inner,\n            patterns: self.patterns.clone(),\n        }\n    }\n}",
+              "explanation": "This sets up a layered tracing subscriber with JSON output, sanitization, and context injection. Layers are composable and process events in order."
+            }
+          ]
+        },
+        {
+          "number": "5.2.3",
+          "title": "Add Request Context and Trace Correlation",
+          "description": "Implement automatic injection of request context (trace ID, span ID, user ID, request ID) into all logs. Ensure logs can be correlated with distributed traces by including OpenTelemetry trace context.",
+          "tdd_instructions": "Write tests that verify trace IDs appear in logs and match the distributed trace context.",
+          "tips": [
+            {
+              "type": "junior_dev",
+              "content": "Trace context propagation is complex - review the tracing guide carefully",
+              "resource_link": "../../junior-dev-helper/opentelemetry-tracing-guide.md"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Context injection middleware",
+              "language": "rust",
+              "code": "use opentelemetry::trace::TraceContextExt;\nuse tracing_opentelemetry::OpenTelemetrySpanExt;\n\npub async fn context_injection_middleware<B>(\n    req: Request<B>,\n    next: Next<B>,\n) -> Result<Response, Error> {\n    // Extract or create trace context\n    let trace_id = extract_trace_id(&req)\n        .unwrap_or_else(|| generate_trace_id());\n    \n    let request_id = Uuid::new_v4().to_string();\n    \n    // Create root span with context\n    let span = tracing::info_span!(\n        \"http_request\",\n        trace_id = %trace_id,\n        request_id = %request_id,\n        method = %req.method(),\n        path = %req.uri().path(),\n        // These will be added after auth\n        user_id = tracing::field::Empty,\n        tenant_id = tracing::field::Empty,\n    );\n    \n    // Set OpenTelemetry context\n    let cx = opentelemetry::Context::current();\n    span.set_parent(cx);\n    \n    // Process request within span\n    async move {\n        let response = next.run(req).await;\n        \n        // Record response info\n        tracing::Span::current().record(\n            \"status\", \n            &response.status().as_u16()\n        );\n        \n        response\n    }\n    .instrument(span)\n    .await\n}",
+              "explanation": "This middleware creates a root span for each request and ensures all logs within that request include trace context. The trace ID enables correlation between logs and distributed traces."
+            }
+          ]
+        }
+      ],
+      "checkpoint": {
+        "number": 2,
+        "title": "Structured Logging Review",
+        "stop_message": "🛑 CHECKPOINT 2: Structured Logging Review - STOP and request review before proceeding",
+        "deliverables": [
+          "JSON structured logging configuration",
+          "Log sanitization for all sensitive data types",
+          "Request context injection with trace IDs",
+          "Performance-optimized logging for hot paths",
+          "All logging tests passing"
+        ],
+        "verification_steps": [
+          "Run `just test-logging` - all tests should pass",
+          "Make API requests and verify JSON logs contain trace_id",
+          "Attempt to log sensitive data and verify sanitization",
+          "Check log performance with `just bench-logging`",
+          "Verify no sensitive data in sample logs"
+        ],
+        "common_issues": [
+          {
+            "issue": "Logs missing trace_id field",
+            "solution": "Ensure context injection middleware runs before other middleware"
+          },
+          {
+            "issue": "Sensitive data appearing in logs",
+            "solution": "Add missing patterns to sanitization layer, check for custom Debug impls"
+          },
+          {
+            "issue": "High CPU usage from logging",
+            "solution": "Reduce log verbosity in hot paths, use sampling for debug logs"
+          }
+        ]
+      }
+    },
+    {
+      "section_number": "5.3",
+      "title": "Distributed Tracing Implementation",
+      "work_unit_context": {
+        "complexity": "High",
+        "complexity_reason": "Complex context propagation across async boundaries and service calls",
+        "scope": {
+          "estimated_lines": "~700 lines",
+          "file_count": "6-7 files"
+        },
+        "key_components": [
+          {
+            "name": "OpenTelemetry setup",
+            "estimated_lines": "~150",
+            "purpose": "Configure OTLP exporter and trace pipeline"
+          },
+          {
+            "name": "Span instrumentation",
+            "estimated_lines": "~250",
+            "purpose": "Add spans to key operations"
+          },
+          {
+            "name": "Context propagation",
+            "estimated_lines": "~150",
+            "purpose": "Ensure trace context flows through async operations"
+          },
+          {
+            "name": "Sampling configuration",
+            "estimated_lines": "~100",
+            "purpose": "Implement adaptive sampling for cost control"
+          },
+          {
+            "name": "Trace attributes",
+            "estimated_lines": "~50",
+            "purpose": "Add semantic conventions and custom attributes"
+          }
+        ],
+        "patterns": ["Context propagation", "Async tracing", "Sampling strategies"],
+        "algorithms": ["Adaptive sampling", "Trace ID generation", "Context extraction"]
+      },
+      "tasks": [
+        {
+          "number": "5.3.1",
+          "title": "Write Distributed Tracing Tests First",
+          "description": "Create tests that verify trace context propagation across service boundaries, span parent-child relationships, and proper attribute attachment. Tests should cover HTTP headers, async task spawning, and database queries.",
+          "tdd_instructions": "Write integration tests that create traces and verify the span hierarchy. Use the OpenTelemetry test exporter to capture spans.",
+          "tips": [
+            {
+              "type": "junior_dev",
+              "content": "Start with the OpenTelemetry Tracing Guide to understand concepts",
+              "resource_link": "../../junior-dev-helper/opentelemetry-tracing-guide.md"
+            },
+            {
+              "type": "warning",
+              "content": "Context propagation across async boundaries is tricky - test thoroughly"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Test for trace context propagation",
+              "language": "rust",
+              "code": "#[cfg(test)]\nmod tracing_tests {\n    use opentelemetry::testing::TestExporter;\n    use opentelemetry::trace::{Tracer, TracerProvider};\n    \n    #[tokio::test]\n    async fn test_trace_context_propagation() {\n        // Arrange\n        let exporter = TestExporter::new();\n        let provider = init_test_tracer(exporter.clone());\n        let tracer = provider.tracer(\"test\");\n        \n        // Act - simulate request flow\n        let root_span = tracer.start(\"http_request\");\n        let root_context = Context::current_with_span(root_span);\n        \n        // Simulate GraphQL resolver\n        let graphql_span = tracer.start_with_context(\n            \"graphql_resolver\",\n            &root_context\n        );\n        let graphql_context = root_context.with_span(graphql_span);\n        \n        // Simulate database query\n        let db_span = tracer.start_with_context(\n            \"database_query\",\n            &graphql_context\n        );\n        \n        // Close spans\n        db_span.end();\n        graphql_context.span().end();\n        root_context.span().end();\n        \n        // Assert - verify span hierarchy\n        let spans = exporter.get_finished_spans();\n        assert_eq!(spans.len(), 3);\n        \n        let db_span = spans.iter()\n            .find(|s| s.name == \"database_query\")\n            .unwrap();\n        let graphql_span = spans.iter()\n            .find(|s| s.name == \"graphql_resolver\")\n            .unwrap();\n        let root_span = spans.iter()\n            .find(|s| s.name == \"http_request\")\n            .unwrap();\n        \n        // Verify parent-child relationships\n        assert_eq!(\n            db_span.parent_span_id,\n            graphql_span.span_context.span_id()\n        );\n        assert_eq!(\n            graphql_span.parent_span_id,\n            root_span.span_context.span_id()\n        );\n    }\n}",
+              "explanation": "This test verifies that trace context properly propagates through multiple service layers, maintaining parent-child relationships between spans."
+            }
+          ]
+        },
+        {
+          "number": "5.3.2",
+          "title": "Implement OpenTelemetry Integration",
+          "description": "Set up OpenTelemetry with OTLP exporter, configure the trace pipeline with appropriate sampling, and integrate with the existing tracing subscriber. Ensure traces include both automatic instrumentation and custom spans.",
+          "tdd_instructions": "Implement the tracer setup to make propagation tests pass, then add span creation to key operations.",
+          "tips": [
+            {
+              "type": "performance",
+              "content": "Use sampling to control costs - not every request needs to be traced"
+            },
+            {
+              "type": "junior_dev",
+              "content": "The tracing-patterns.rs file has examples of proper span usage",
+              "resource_link": "../../.spec/examples/tracing-patterns.rs"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "OpenTelemetry setup with OTLP exporter",
+              "language": "rust",
+              "code": "use opentelemetry::{global, KeyValue, runtime::TokioCurrentThread};\nuse opentelemetry_otlp::{OtlpExporterPipeline, WithExportConfig};\nuse opentelemetry_sdk::{\n    trace::{self, RandomIdGenerator, Sampler},\n    Resource,\n};\n\npub fn init_tracer(config: &TracingConfig) -> Result<(), TraceError> {\n    // Configure resource attributes\n    let resource = Resource::new(vec![\n        KeyValue::new(\"service.name\", \"pcf-api\"),\n        KeyValue::new(\"service.version\", env!(\"CARGO_PKG_VERSION\")),\n        KeyValue::new(\"deployment.environment\", &config.environment),\n    ]);\n    \n    // Configure OTLP exporter\n    let exporter = opentelemetry_otlp::new_exporter()\n        .tonic()\n        .with_endpoint(&config.otlp_endpoint)\n        .with_timeout(Duration::from_secs(3));\n    \n    // Configure trace pipeline\n    let trace_config = trace::config()\n        .with_sampler(get_sampler(&config.sampling))\n        .with_id_generator(RandomIdGenerator::default())\n        .with_resource(resource);\n    \n    let tracer = opentelemetry_otlp::new_pipeline()\n        .tracing()\n        .with_exporter(exporter)\n        .with_trace_config(trace_config)\n        .install_batch(TokioCurrentThread)?;\n    \n    // Set global tracer\n    global::set_tracer_provider(tracer.provider().unwrap());\n    \n    // Configure tracing subscriber with OpenTelemetry layer\n    let telemetry_layer = tracing_opentelemetry::layer()\n        .with_tracer(tracer);\n    \n    Registry::default()\n        .with(telemetry_layer)\n        .with(existing_layers) // JSON, sanitization, etc.\n        .init();\n    \n    Ok(())\n}\n\nfn get_sampler(config: &SamplingConfig) -> Sampler {\n    match config.strategy {\n        SamplingStrategy::AlwaysOn => Sampler::AlwaysOn,\n        SamplingStrategy::AlwaysOff => Sampler::AlwaysOff,\n        SamplingStrategy::Probability(rate) => {\n            Sampler::TraceIdRatioBased(rate)\n        },\n        SamplingStrategy::Adaptive => {\n            // Custom sampler that adjusts based on load\n            AdaptiveSampler::new(\n                config.base_rate,\n                config.peak_rate,\n            )\n        },\n    }\n}",
+              "explanation": "This configuration sets up OpenTelemetry with OTLP export, configurable sampling, and integration with the existing tracing infrastructure. The adaptive sampler helps control costs while maintaining visibility."
+            }
+          ]
+        },
+        {
+          "number": "5.3.3",
+          "title": "Instrument Key Operations with Spans",
+          "description": "Add detailed span instrumentation to critical paths: GraphQL resolvers (including field-level tracing), Database queries (with SQL sanitization), External API calls, Cache operations, and Authorization checks. Ensure all spans include appropriate attributes following OpenTelemetry semantic conventions.",
+          "tdd_instructions": "For each operation type, write tests first that verify span creation and attribute attachment.",
+          "tips": [
+            {
+              "type": "security",
+              "content": "Never include sensitive data in span attributes - apply same sanitization as logs"
+            },
+            {
+              "type": "performance",
+              "content": "Be selective with spans in hot paths - tracing has overhead"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "GraphQL resolver instrumentation",
+              "language": "rust",
+              "code": "use async_graphql::{Context, Object, Result};\nuse opentelemetry::trace::{FutureExt, StatusCode, TraceContextExt};\n\n#[Object]\nimpl UserQuery {\n    #[tracing::instrument(\n        name = \"graphql.resolve_user\",\n        skip(self, ctx),\n        fields(\n            graphql.operation = \"query\",\n            graphql.field = \"user\",\n            user.id = %id,\n            otel.kind = \"server\"\n        )\n    )]\n    async fn user(\n        &self,\n        ctx: &Context<'_>,\n        id: ID,\n    ) -> Result<User> {\n        let span = tracing::Span::current();\n        \n        // Add GraphQL-specific attributes\n        span.record(\"graphql.document\", &ctx.query_env.document);\n        span.record(\"graphql.operation_name\", &ctx.query_env.operation_name);\n        \n        // Authorization check with span\n        let auth_result = async {\n            check_user_permission(&ctx, &id).await\n        }\n        .instrument(tracing::info_span!(\"authorization.check\"))\n        .await?;\n        \n        // Database query with span\n        let user = async {\n            let pool = ctx.data::<DbPool>()?;\n            \n            let span = tracing::info_span!(\n                \"db.query\",\n                db.system = \"surrealdb\",\n                db.operation = \"select\",\n                db.statement = \"SELECT * FROM user WHERE id = $id\",\n                otel.kind = \"client\"\n            );\n            \n            sqlx::query_as!(User, \n                \"SELECT * FROM user WHERE id = $1\",\n                id.as_str()\n            )\n            .fetch_one(pool)\n            .instrument(span)\n            .await\n        }\n        .await\n        .map_err(|e| {\n            span.record_error(&e);\n            span.set_status(StatusCode::Error, \"Database query failed\");\n            e\n        })?;\n        \n        span.add_event(\n            \"user.loaded\",\n            vec![\n                KeyValue::new(\"user.type\", user.user_type.to_string()),\n                KeyValue::new(\"user.active\", user.is_active),\n            ],\n        );\n        \n        Ok(user)\n    }\n}",
+              "explanation": "This example shows comprehensive instrumentation of a GraphQL resolver with nested spans for authorization and database queries. Each span includes semantic attributes and proper error handling."
+            }
+          ]
+        }
+      ],
+      "checkpoint": {
+        "number": 3,
+        "title": "Distributed Tracing Review",
+        "stop_message": "🛑 CHECKPOINT 3: Distributed Tracing Review - STOP and request review before proceeding",
+        "deliverables": [
+          "OpenTelemetry integration with OTLP export",
+          "Span instrumentation for all key operations",
+          "Context propagation across async boundaries",
+          "Sampling configuration with adaptive strategy",
+          "All tracing tests passing"
+        ],
+        "verification_steps": [
+          "Run `just test-tracing` - all tests should pass",
+          "Start Jaeger UI with `just jaeger-up`",
+          "Make API requests and view traces in Jaeger",
+          "Verify parent-child span relationships",
+          "Check sampling is working (not all requests traced)"
+        ],
+        "common_issues": [
+          {
+            "issue": "Spans not appearing in Jaeger",
+            "solution": "Check OTLP endpoint configuration, verify Jaeger is running"
+          },
+          {
+            "issue": "Broken trace context (orphan spans)",
+            "solution": "Ensure context propagation in async spawns, use .instrument()"
+          },
+          {
+            "issue": "High overhead from tracing",
+            "solution": "Reduce sampling rate, remove spans from tight loops"
+          }
+        ]
+      }
+    },
+    {
+      "section_number": "5.4",
+      "title": "Dashboards and Alerting",
+      "work_unit_context": {
+        "complexity": "Low",
+        "complexity_reason": "Mostly configuration with some custom PromQL queries",
+        "scope": {
+          "estimated_lines": "~400 lines",
+          "file_count": "8-10 files (mostly JSON/YAML)"
+        },
+        "key_components": [
+          {
+            "name": "Grafana dashboards",
+            "estimated_lines": "~200",
+            "purpose": "Visualize metrics with useful layouts"
+          },
+          {
+            "name": "Prometheus alerts",
+            "estimated_lines": "~100",
+            "purpose": "Define alerting rules for critical conditions"
+          },
+          {
+            "name": "Performance validation",
+            "estimated_lines": "~100",
+            "purpose": "Verify observability overhead is acceptable"
+          }
+        ],
+        "patterns": ["PromQL queries", "Dashboard as code", "Alert routing"],
+        "algorithms": ["Rate calculations", "Percentile aggregations"]
+      },
+      "tasks": [
+        {
+          "number": "5.4.1",
+          "title": "Create Grafana Dashboards",
+          "description": "Design and implement Grafana dashboards that provide actionable insights. Create an Overview Dashboard (Golden signals: latency, traffic, errors, saturation), Service Dashboard (GraphQL operations, database performance, cache hit rates), and Infrastructure Dashboard (Resource usage, connection pools, garbage collection).",
+          "tdd_instructions": "While dashboards aren't typically tested with TDD, create smoke tests that verify dashboard JSON is valid and queries are syntactically correct.",
+          "tips": [
+            {
+              "type": "junior_dev",
+              "content": "Start with Grafana's dashboard templates and customize",
+              "resource_link": "https://grafana.com/grafana/dashboards"
+            },
+            {
+              "type": "warning",
+              "content": "Avoid too many panels - focus on actionable metrics"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Overview dashboard configuration",
+              "language": "json",
+              "code": "{\n  \"dashboard\": {\n    \"title\": \"PCF API Overview\",\n    \"panels\": [\n      {\n        \"title\": \"Request Rate\",\n        \"targets\": [{\n          \"expr\": \"sum(rate(http_requests_total[5m])) by (method)\",\n          \"legendFormat\": \"{{method}}\"\n        }],\n        \"type\": \"graph\",\n        \"yaxes\": [{\"format\": \"reqps\"}]\n      },\n      {\n        \"title\": \"Error Rate\",\n        \"targets\": [{\n          \"expr\": \"sum(rate(http_requests_total{status_group=~\\\"4xx|5xx\\\"}[5m])) / sum(rate(http_requests_total[5m]))\",\n          \"legendFormat\": \"Error %\"\n        }],\n        \"type\": \"singlestat\",\n        \"format\": \"percentunit\",\n        \"thresholds\": \"0.01,0.05\",\n        \"colors\": [\"green\", \"yellow\", \"red\"]\n      },\n      {\n        \"title\": \"P95 Latency\",\n        \"targets\": [{\n          \"expr\": \"histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, endpoint))\",\n          \"legendFormat\": \"{{endpoint}}\"\n        }],\n        \"type\": \"graph\",\n        \"yaxes\": [{\"format\": \"s\"}],\n        \"alert\": {\n          \"conditions\": [{\n            \"evaluator\": {\"params\": [1], \"type\": \"gt\"},\n            \"query\": {\"params\": [\"A\", \"5m\", \"now\"]},\n            \"reducer\": {\"params\": [], \"type\": \"avg\"}\n          }],\n          \"name\": \"High P95 Latency\"\n        }\n      }\n    ]\n  }\n}",
+              "explanation": "This dashboard provides the 'golden signals' for monitoring service health. The error rate panel uses color coding for quick visual assessment, and the latency panel includes alerting configuration."
+            }
+          ]
+        },
+        {
+          "number": "5.4.2",
+          "title": "Configure Prometheus Alerting Rules",
+          "description": "Define Prometheus alerting rules for critical conditions that require human intervention. Create alerts for: High error rates (>5% for 5 minutes), High latency (P95 > 1s), Resource exhaustion (memory > 90%, connection pool > 80%), Service degradation (circuit breaker open, database unavailable).",
+          "tdd_instructions": "Create unit tests that verify alert expressions are valid PromQL and produce expected results with test data.",
+          "tips": [
+            {
+              "type": "warning",
+              "content": "Avoid alert fatigue - only alert on actionable issues"
+            },
+            {
+              "type": "junior_dev",
+              "content": "Test alerts in staging before production to tune thresholds"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Critical alerting rules",
+              "language": "yaml",
+              "code": "groups:\n  - name: pcf_api_alerts\n    interval: 30s\n    rules:\n      - alert: HighErrorRate\n        expr: |\n          (\n            sum(rate(http_requests_total{status_group=~\"4xx|5xx\"}[5m]))\n            /\n            sum(rate(http_requests_total[5m]))\n          ) > 0.05\n        for: 5m\n        labels:\n          severity: critical\n          team: platform\n        annotations:\n          summary: \"High error rate detected\"\n          description: \"Error rate is {{ $value | humanizePercentage }} for the last 5 minutes\"\n          runbook_url: \"https://docs.pcf.io/runbooks/high-error-rate\"\n      \n      - alert: HighP95Latency\n        expr: |\n          histogram_quantile(0.95,\n            sum(rate(http_request_duration_seconds_bucket[5m])) by (le)\n          ) > 1.0\n        for: 5m\n        labels:\n          severity: warning\n          team: platform\n        annotations:\n          summary: \"P95 latency exceeds 1 second\"\n          description: \"95th percentile latency is {{ $value | humanizeDuration }}\"\n      \n      - alert: DatabaseConnectionPoolExhaustion\n        expr: |\n          (\n            db_connection_pool_used / db_connection_pool_size\n          ) > 0.8\n        for: 2m\n        labels:\n          severity: warning\n          team: platform\n        annotations:\n          summary: \"Database connection pool near exhaustion\"\n          description: \"Connection pool is {{ $value | humanizePercentage }} full\"\n          \n      - alert: CircuitBreakerOpen\n        expr: circuit_breaker_state{state=\"open\"} == 1\n        for: 1m\n        labels:\n          severity: critical\n          team: platform\n        annotations:\n          summary: \"Circuit breaker {{ $labels.name }} is open\"\n          description: \"Service {{ $labels.service }} is experiencing failures\"",
+              "explanation": "These alerting rules cover the most critical failure scenarios. Each alert includes metadata for routing and runbook links for incident response."
+            }
+          ]
+        },
+        {
+          "number": "5.4.3",
+          "title": "Validate Performance Impact",
+          "description": "Measure and document the performance overhead of observability instrumentation. Run benchmarks with and without telemetry enabled, measure memory overhead from metrics, assess CPU impact of logging and tracing, and optimize hot paths if overhead exceeds 5%.",
+          "tdd_instructions": "Write benchmarks that compare performance with telemetry on/off. Tests should fail if overhead exceeds acceptable thresholds.",
+          "tips": [
+            {
+              "type": "performance",
+              "content": "Use sampling and batching to reduce overhead in production"
+            },
+            {
+              "type": "warning",
+              "content": "Some overhead is acceptable for the visibility gained - find the right balance"
+            }
+          ],
+          "code_examples": [
+            {
+              "purpose": "Performance overhead benchmark",
+              "language": "rust",
+              "code": "#[cfg(test)]\nmod performance_tests {\n    use criterion::{black_box, criterion_group, criterion_main, Criterion};\n    \n    fn benchmark_with_telemetry(c: &mut Criterion) {\n        let runtime = tokio::runtime::Runtime::new().unwrap();\n        \n        c.bench_function(\"api_request_with_telemetry\", |b| {\n            b.to_async(&runtime).iter(|| async {\n                // Simulate API request with all telemetry enabled\n                let response = client\n                    .post(\"/graphql\")\n                    .json(&json!({\n                        \"query\": \"{ user(id: 1) { name email } }\"\n                    }))\n                    .send()\n                    .await\n                    .unwrap();\n                    \n                black_box(response);\n            });\n        });\n    }\n    \n    fn benchmark_without_telemetry(c: &mut Criterion) {\n        // Disable all telemetry\n        std::env::set_var(\"TELEMETRY_DISABLED\", \"true\");\n        let runtime = tokio::runtime::Runtime::new().unwrap();\n        \n        c.bench_function(\"api_request_without_telemetry\", |b| {\n            b.to_async(&runtime).iter(|| async {\n                // Same request without telemetry\n                let response = client\n                    .post(\"/graphql\")\n                    .json(&json!({\n                        \"query\": \"{ user(id: 1) { name email } }\"\n                    }))\n                    .send()\n                    .await\n                    .unwrap();\n                    \n                black_box(response);\n            });\n        });\n    }\n    \n    criterion_group!(\n        benches,\n        benchmark_with_telemetry,\n        benchmark_without_telemetry\n    );\n    criterion_main!(benches);\n}\n\n// Overhead calculation script\n#[test]\nfn verify_overhead_acceptable() {\n    let with_telemetry = run_benchmark(\"api_request_with_telemetry\");\n    let without_telemetry = run_benchmark(\"api_request_without_telemetry\");\n    \n    let overhead_percent = \n        ((with_telemetry - without_telemetry) / without_telemetry) * 100.0;\n    \n    println!(\"Telemetry overhead: {:.2}%\", overhead_percent);\n    \n    assert!(\n        overhead_percent < 5.0,\n        \"Telemetry overhead {:.2}% exceeds 5% limit\",\n        overhead_percent\n    );\n}",
+              "explanation": "These benchmarks measure the real performance impact of observability. The test ensures overhead stays within acceptable limits, failing the build if it exceeds 5%."
+            }
+          ]
+        }
+      ],
+      "checkpoint": {
+        "number": 4,
+        "title": "Complete Observability Review",
+        "stop_message": "🛑 CHECKPOINT 4: Complete Observability Review - STOP and request final review",
+        "deliverables": [
+          "Grafana dashboards provisioned and functional",
+          "Prometheus alerting rules configured",
+          "Performance overhead verified <5%",
+          "All observability tests passing",
+          "Documentation for dashboard usage and alert response"
+        ],
+        "verification_steps": [
+          "Access Grafana dashboards and verify data is populating",
+          "Trigger test alerts and verify they fire correctly",
+          "Run performance benchmarks: `just bench-overhead`",
+          "Execute security scan: `just scan-telemetry-security`",
+          "Review sample of logs/metrics/traces for sensitive data"
+        ],
+        "common_issues": [
+          {
+            "issue": "Dashboards show 'No Data'",
+            "solution": "Verify Prometheus is scraping metrics endpoint, check metric names match queries"
+          },
+          {
+            "issue": "Alerts not firing when expected",
+            "solution": "Check alert expressions with promtool, verify 'for' duration isn't too long"
+          },
+          {
+            "issue": "Performance overhead too high",
+            "solution": "Increase sampling rates, reduce cardinality, optimize hot path instrumentation"
+          }
+        ]
+      }
+    }
+  ],
+  "troubleshooting": {
+    "intro_narrative": "Observability implementation can surface unique challenges. This section covers the most common issues and their solutions:",
+    "common_issues": [
+      {
+        "category": "Metrics Issues",
+        "issues": [
+          {
+            "symptom": "Prometheus returns 'out of memory' errors",
+            "cause": "Cardinality explosion from unbounded labels",
+            "solution": "Review metric labels, implement cardinality limiting, use label normalization"
+          },
+          {
+            "symptom": "Metrics endpoint response time increasing",
+            "cause": "Too many metric series being tracked",
+            "solution": "Implement metric expiry, reduce histogram buckets, aggregate before exposing"
+          }
+        ]
+      },
+      {
+        "category": "Logging Issues",
+        "issues": [
+          {
+            "symptom": "Logs missing important context",
+            "cause": "Span not properly propagated",
+            "solution": "Ensure .instrument() is used for async operations, check middleware ordering"
+          },
+          {
+            "symptom": "Log volume overwhelming storage",
+            "cause": "Debug logging enabled in production",
+            "solution": "Implement dynamic log levels, use sampling for verbose components"
+          }
+        ]
+      },
+      {
+        "category": "Tracing Issues",
+        "issues": [
+          {
+            "symptom": "Traces show orphaned spans",
+            "cause": "Context lost across async boundaries",
+            "solution": "Use opentelemetry::Context::current_with_span() when spawning tasks"
+          },
+          {
+            "symptom": "Trace export failing intermittently",
+            "cause": "OTLP endpoint unreachable or timing out",
+            "solution": "Implement retry logic, use batch processor, increase timeout"
+          }
+        ]
+      }
+    ],
+    "escalation_path": {
+      "when_stuck": "If blocked for more than 2 hours on any observability issue",
+      "documentation_requirements": [
+        "Document the specific error messages or symptoms",
+        "Include relevant configuration and code snippets",
+        "Provide metrics/logs/traces showing the issue",
+        "List troubleshooting steps already attempted"
+      ]
+    }
+  },
+  "security_requirements": {
+    "importance_narrative": "Observability systems have access to all data flowing through the application, making them a critical security concern. A single misconfiguration can leak sensitive data to logs or metrics that are often stored for long periods.",
+    "categories": [
+      {
+        "name": "Data Sanitization",
+        "requirements": [
+          {
+            "type": "MUST NOT",
+            "requirement": "Log passwords, tokens, API keys, or authentication headers",
+            "rationale": "Authentication credentials in logs can lead to account compromise"
+          },
+          {
+            "type": "MUST NOT",
+            "requirement": "Include PII (emails, SSNs, credit cards) in metrics labels",
+            "rationale": "Metrics are often retained indefinitely and difficult to purge"
+          },
+          {
+            "type": "MUST",
+            "requirement": "Sanitize SQL queries in traces before recording",
+            "rationale": "SQL queries may contain sensitive data in WHERE clauses"
+          },
+          {
+            "type": "SHOULD",
+            "requirement": "Hash user IDs in metrics labels",
+            "rationale": "Allows correlation while maintaining privacy"
+          }
+        ],
+        "implementation_guidance": "Use the sanitization layer for all telemetry output. When in doubt, redact rather than expose. Test sanitization with real-world data patterns.",
+        "testing_approach": "Create test cases with known sensitive patterns and verify they're sanitized in all telemetry outputs"
+      },
+      {
+        "name": "Access Control",
+        "requirements": [
+          {
+            "type": "MUST",
+            "requirement": "Protect /metrics endpoint with authentication in production",
+            "rationale": "Metrics can reveal system architecture and usage patterns"
+          },
+          {
+            "type": "MUST",
+            "requirement": "Use TLS for OTLP trace export",
+            "rationale": "Traces contain detailed application behavior"
+          },
+          {
+            "type": "SHOULD",
+            "requirement": "Implement RBAC for dashboard access",
+            "rationale": "Different roles need different levels of visibility"
+          }
+        ],
+        "implementation_guidance": "Use existing authentication middleware for metrics endpoint. Configure OTLP exporter with TLS certificates.",
+        "testing_approach": "Verify endpoints require authentication, test TLS configuration with openssl"
+      },
+      {
+        "name": "Data Retention",
+        "requirements": [
+          {
+            "type": "MUST",
+            "requirement": "Configure retention policies for all telemetry data",
+            "rationale": "Compliance requirements and storage costs"
+          },
+          {
+            "type": "SHOULD",
+            "requirement": "Implement shorter retention for high-cardinality data",
+            "rationale": "Reduces both cost and privacy risk"
+          }
+        ],
+        "implementation_guidance": "Configure Prometheus retention, implement log rotation, set trace sampling to control volume",
+        "testing_approach": "Verify retention policies are applied, test data is purged after retention period"
+      }
+    ]
+  },
+  "learning_path": {
+    "target_audience": "Developers new to observability or the specific tools used",
+    "intro_narrative": "Observability can be overwhelming with its three pillars and numerous tools. Follow this structured path to build understanding progressively:",
+    "progression": [
+      {
+        "step": 1,
+        "focus": "Observability Fundamentals",
+        "resources": ["Observability Tutorial", "Three Pillars Overview"],
+        "estimated_time": "2 hours",
+        "practical_exercise": "Set up local Prometheus and Grafana, explore existing dashboards"
+      },
+      {
+        "step": 2,
+        "focus": "Metrics Deep Dive",
+        "resources": ["Prometheus Metrics Guide", "Cardinality Control Guide"],
+        "estimated_time": "4 hours",
+        "practical_exercise": "Implement a custom metric with proper labels and test cardinality limits"
+      },
+      {
+        "step": 3,
+        "focus": "Structured Logging",
+        "resources": ["Structured Logging Guide", "Log Sanitization Patterns"],
+        "estimated_time": "3 hours",
+        "practical_exercise": "Add structured logging to a sample application with sanitization"
+      },
+      {
+        "step": 4,
+        "focus": "Distributed Tracing",
+        "resources": ["OpenTelemetry Tracing Guide", "Context Propagation"],
+        "estimated_time": "4 hours",
+        "practical_exercise": "Trace a request through multiple services, view in Jaeger"
+      },
+      {
+        "step": 5,
+        "focus": "Production Practices",
+        "resources": ["Performance Optimization", "Security Considerations"],
+        "estimated_time": "2 hours",
+        "practical_exercise": "Measure overhead, implement sampling, secure endpoints"
+      }
+    ],
+    "key_warnings": [
+      "Cardinality explosion can crash Prometheus - always limit labels",
+      "Sensitive data in logs is a compliance violation - sanitize everything",
+      "Observability has overhead - measure impact and optimize hot paths",
+      "Broken traces are worse than no traces - test context propagation thoroughly"
+    ]
+  },
+  "next_phase": {
+    "number": 6,
+    "title": "Performance Optimization",
+    "preview_narrative": "With comprehensive observability in place, Phase 6 focuses on using the telemetry data to optimize performance. This includes implementing DataLoader for N+1 query prevention, response caching strategies, connection pool tuning, and load testing to identify bottlenecks.",
+    "key_features": [
+      "DataLoader pattern for batching database queries",
+      "Multi-layer caching with Redis",
+      "Connection pool optimization based on metrics",
+      "Load testing with realistic scenarios",
+      "Performance regression detection"
+    ]
+  }
+}
