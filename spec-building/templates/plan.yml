@@ -1,0 +1,222 @@
+Worker:
+    metadata:
+        purpose: "Implement the worker plan"
+        # trigger_events: ["post-implementation", "pre-review", "spec-update"]
+    prerequisites:
+        - List required specs/components
+        - Environmental requirements
+        - Tool availability checks
+
+    execution_phases:
+        - setup: Initialize environment, verify access
+        - implement: Core implementation with checkpoints
+        - validate: Self-checks against spec
+        - handoff: Package outputs for next phase
+
+    error_handling:
+        - Rollback procedures
+        - Escalation criteria
+
+    success_metrics:
+        - Read Feedback provided
+        - Spec alignment score
+        - Test coverage targets
+        - Performance benchmarks
+        - Changes committed
+
+Reviewer:
+    review_checkpoints:
+        - Spec compliance check
+        - Code quality gates
+        - Security scan points
+        - Documentation completeness
+
+    feedback_loops:
+        - How to request clarification
+        - Iteration limits
+        - Approval criteria
+
+    success_metrics:
+        - Checked for Questions; Answers provided
+        - Feedback captured
+        - Changes committed
+
+Aligner:
+    metadata:
+        purpose: "Ensure implementation remains aligned with SPEC throughout development"
+        trigger_events: ["post-implementation", "pre-review", "spec-update"]
+
+    prerequisites:
+        spec_artifacts:
+            - .claude/SPEC.md
+            - .claude/.spec/{{component_name}}.md
+            - .spec/interfaces/{{interface_name}}.md
+
+        implementation_artifacts:
+            - { { implementation_path } }
+            - { { test_path } }
+            - { { documentation_path } }
+
+        alignment_criteria:
+            - Traceability matrix from spec
+            - Acceptance criteria checklist
+            - Interface contracts
+
+    execution_phases:
+        preparation:
+            - Load spec requirements for {{component_name}}
+            - Extract measurable criteria
+            - Build alignment checklist:
+                  - Functional requirements met: []
+                  - Non-functional requirements met: []
+                  - Interface contracts honored: []
+                  - Constraints respected: []
+
+        static_analysis:
+            - Code structure vs spec architecture alignment
+            - API signatures vs interface definitions
+            - Configuration vs deployment requirements
+            - Dependencies vs approved libraries list
+
+        dynamic_analysis:
+            - Test coverage vs spec requirements
+            - Performance metrics vs targets
+            - Error handling vs specified behaviors
+            - Edge cases vs documented constraints
+
+        gap_identification:
+            - Missing requirements checklist
+            - Over-implementation detection
+            - Spec ambiguity discoveries
+            - Deviation justifications needed
+
+        alignment_scoring:
+            scoring_matrix:
+                critical_requirements: weight=0.5
+                standard_requirements: weight=0.3
+                nice_to_have: weight=0.2
+
+            thresholds:
+                pass: 95%
+                conditional_pass: 85%
+                fail: <85%
+
+        outputs:
+            alignment_report:
+                - path: .reports/alignment/{{phase}}-{{component}}.md
+                - format:
+                      - Executive summary (pass/fail/conditional)
+                      - Detailed requirement coverage
+                      - Gap analysis with remediation steps
+                      - Spec clarification requests
+
+        feedback_items:
+            - spec_updates_needed: []
+            - implementation_fixes_required: []
+            - documentation_gaps: []
+
+    escalation_criteria:
+        - Critical requirement missing
+        - Architecture deviation detected
+        - Performance target missed by >20%
+        - Security constraint violated
+
+Documenter Plan Template:
+    metadata:
+        purpose: "Create and maintain living documentation synchronized with implementation"
+        documentation_types: ["api", "user", "developer", "operations"]
+
+    prerequisites:
+        source_artifacts:
+            - Implementation code with docstrings
+            - Test files showing usage examples
+            - Aligner report for accuracy
+            - SPEC for context
+
+        documentation_targets:
+            - .docs/api/{{component_name}}.md
+            - .docs/guides/{{feature_name}}.md
+            - README updates
+            - CHANGELOG entries
+
+    execution_phases:
+        1_change_detection:
+            - Diff analysis against previous version
+            - New feature identification
+            - Breaking change detection
+            - Deprecation notices needed
+
+        2_documentation_generation:
+            api_documentation:
+                - Extract from code annotations
+                - Generate example usage from tests
+                - Create input/output schemas
+                - Document error conditions
+
+            user_documentation:
+                - Feature overview from spec
+                - Step-by-step guides
+                - Common use cases
+                - Troubleshooting section
+
+            developer_documentation:
+                - Architecture decisions records (ADRs)
+                - Setup instructions
+                - Contribution guidelines
+                - Extension points
+
+        3_cross_reference_creation:
+            - Link specs to implementation
+            - Connect examples to API docs
+            - Create navigation structure
+            - Build search index
+
+        4_validation_checks:
+            - Example code execution
+            - Link verification
+            - Terminology consistency
+            - Version accuracy
+
+        5_living_doc_updates:
+            update_strategy:
+                - Incremental updates for minor changes
+                - Section rewrites for major features
+                - Deprecation timeline tracking
+                - Migration guide generation
+
+    outputs:
+        documentation_set:
+            - Updated markdown files
+            - API reference (OpenAPI/AsyncAPI)
+            - Interactive examples
+            - Diagrams (mermaid/plantuml)
+
+        documentation_metrics:
+            - Coverage percentage
+            - Staleness indicators
+            - Clarity score (readability)
+            - Completeness checklist
+
+        changelog_entry:
+            format: |
+                ## [{{version}}] - {{date}}
+                ### {{change_type}}
+                - {{description}} ([#{{pr_number}}]({{pr_link}}))
+                  * Spec reference: {{spec_section}}
+                  * Documentation: {{doc_link}}
+
+    automation_hooks:
+        pre_commit:
+            - Doc string presence check
+            - Example validity
+
+        post_merge:
+            - Auto-generate API docs
+            - Update navigation
+            - Trigger doc deployment
+
+    maintenance_schedule:
+        - Weekly: Broken link check
+        - Monthly: Full consistency review
+        - Quarterly: User feedback integration
+        - Major release: Complete audit

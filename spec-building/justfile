@@ -1,0 +1,12 @@
+# Generate a phase plan from templates
+generate-phase-plan:
+    @echo "Generating phase plan for Phase {{phase}}..."
+    python3 scripts/generate_phase_plan.py {{phase}}
+
+build-spec:
+    @echo "Building specification for Project {{project}}..."
+    python3 scripts/build_spec.py {{project}}
+
+build-roadmap:
+    @echo "Building roadmap for Project {{project}}..."
+    python3 scripts/build_roadmap.py {{project}}

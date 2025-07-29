@@ -1,0 +1,530 @@
+# Work Plan Template - YAML Format for Agent Processing
+phase:
+    number: ${phase_number}
+    title: ${phase_title}
+    implementation_note: ${implementation_note}
+    critical_requirements: ${critical_requirements_summary}
+
+prerequisites:
+    completed_phases:
+        required: ${prerequisite_phases}
+        descriptions: ${prerequisite_descriptions}
+
+    required_knowledge:
+        - area: ${knowledge_area_1}
+          description: ${knowledge_description_1}
+        - area: ${knowledge_area_2}
+          description: ${knowledge_description_2}
+        - area: ${knowledge_area_3}
+          description: ${knowledge_description_3}
+        - area: ${knowledge_area_4}
+          description: ${knowledge_description_4}
+
+resources:
+    example_files:
+        base_path: "${project_path}/.claude/.spec/examples/"
+        files:
+            - name: ${example_file_1}
+              description: ${example_description_1}
+              fallback: null
+            - name: ${example_file_2}
+              description: ${example_description_2}
+              fallback: ${fallback_instruction_2}
+            - name: ${example_file_3}
+              description: ${example_description_3}
+              fallback: "refer to Task ${task_reference} examples"
+
+    specifications:
+        base_path: "${project_path}/.claude/.spec/"
+        files:
+            - name: ${spec_file_1}
+              description: ${spec_description_1}
+            - name: ${spec_file_2}
+              description: ${spec_description_2}
+            - name: "SPEC.md"
+              description: ${phase_requirements_location}
+            - name: "ROADMAP.md"
+              description: "Phase ${phase_number} objectives"
+              line_range: ${line_range}
+
+    junior_dev_guides:
+        base_path: "${project_path}/.claude/junior-dev-helper/"
+        guides:
+            - file: ${guide_1}
+              description: ${guide_description_1}
+            - file: ${guide_2}
+              description: ${guide_description_2}
+            - file: ${guide_3}
+              description: ${guide_description_3}
+            - file: ${error_guide}
+              description: "Troubleshooting guide"
+            - file: ${concept_guide}
+              description: ${concept_description}
+            - file: ${tdd_guide}
+              description: "Test-driven development examples"
+
+    quick_links:
+        - name: "Verification Script"
+          path: "scripts/verify-phase-${phase_number}.sh"
+          fallback:
+              - "create using template in Appendix A"
+              - "use manual verification steps in each checkpoint"
+        - name: ${test_suite_1}
+          path: "scripts/test-${feature}.sh"
+          fallback: "use `just test-${feature}`"
+        - name: ${tool_script}
+          path: "scripts/${tool_name}.sh"
+          fallback: "see ${section_name} section"
+
+overview: ${phase_overview_description}
+
+build_commands:
+    tool: "just"
+    commands:
+        - command: "test"
+          description: "Run all tests including ${feature} tests"
+        - command: "test-${feature_1}"
+          description: "Run only ${feature_1}-related tests"
+        - command: "test-${feature_2}"
+          description: "Run only ${feature_2}-related tests"
+        - command: ${command_1}
+          description: ${command_description_1}
+        - command: ${command_2}
+          description: ${command_description_2}
+
+review_process:
+    checkpoint_count: ${checkpoint_count}
+    review_timeout_hours: ${review_timeout}
+
+    checkpoint_procedure:
+        - step: "PAUSE work and commit code"
+        - step: "Request external review providing:"
+          items:
+              - "This WORK_PLAN.md file"
+              - "The REVIEW_PLAN.md file"
+              - "The checkpoint number"
+              - "All code and artifacts created"
+        - step: "Wait for approval (maximum ${review_timeout} hours)"
+
+    no_response_procedure:
+        - action: "Document concerns in `${project_path}/.claude/.reviews/checkpoint-X-pending.md`"
+        - action: "Proceed cautiously to next section"
+        - action: "Flag implementation as 'pending review'"
+        - restriction: "DO NOT skip ${critical_features}"
+
+development_methodology:
+    type: "Test-Driven Development (TDD)"
+    rules:
+        - name: "Write tests FIRST"
+          exceptions:
+              - "Exploration spikes allowed (max ${spike_hours} hours)"
+              - "MUST delete spike code and restart with tests"
+
+        - name: "Run tests to see them FAIL"
+          validation: "If test passes immediately, verify it's testing the right thing"
+
+        - name: "Write minimal code to make tests PASS"
+          allowance: "OK to refactor immediately if obvious improvements"
+
+        - name: "REFACTOR"
+          description: "Clean up while keeping tests green"
+          additional: ${refactor_allowance}
+
+        - name: "Document as you go"
+          requirement: "Add ${doc_type} comments"
+          flexibility: "Can be brief initially, expand during refactor"
+
+done_criteria:
+    required_coverage:
+        - item: ${required_criteria_1}
+          checked: false
+
+        - item: "${required_criteria_2}:"
+          sub_items:
+              - ${sub_criteria_1}
+              - ${sub_criteria_2}
+              - ${sub_criteria_3}
+          checked: false
+
+        - item: "${required_criteria_3}:"
+          sub_items:
+              - ${sub_criteria_4}
+              - ${sub_criteria_5}
+          checked: false
+
+        - item: "${required_criteria_4}:"
+          sub_items:
+              - ${sub_criteria_6}
+              - ${sub_criteria_7}
+              - ${sub_criteria_8}
+              - ${sub_criteria_9}
+          checked: false
+
+        - item: ${security_criteria}
+          checked: false
+
+        - item: ${monitoring_criteria}
+          checked: false
+
+        - item: ${limit_criteria}
+          checked: false
+
+        - item: "${performance_criteria}:"
+          metrics:
+              target: ${target_metric}
+              acceptable: ${acceptable_metric}
+              unacceptable: ${unacceptable_metric}
+          checked: false
+
+        - item: "All code has corresponding tests written first"
+          checked: false
+
+    optional_coverage:
+        - ${optional_feature_1}
+        - ${optional_feature_2}
+        - ${optional_feature_3}
+
+work_breakdown:
+    sections:
+        - section_number: ${section_number}
+          section_title: ${section_title}
+          work_units: ${work_units}
+
+          context:
+              complexity: ${complexity_level}
+              complexity_reason: ${complexity_reason}
+              scope:
+                  total_lines: ${line_count}
+                  file_count: ${file_count}
+
+              components:
+                  - name: ${component_1}
+                    lines: ${lines_1}
+                  - name: ${component_2}
+                    lines: ${lines_2}
+                  - name: ${component_3}
+                    lines: ${lines_3}
+                  - name: ${component_4}
+                    lines: ${lines_4}
+                  - name: ${component_5}
+                    lines: ${lines_5}
+
+              patterns:
+                  - ${pattern_1}
+                  - ${pattern_2}
+                  - ${pattern_3}
+
+          tasks:
+              - task_number: ${task_number_1}
+                task_title: ${task_title_1}
+
+                tip:
+                    icon: ${icon_1}
+                    type: ${tip_type_1}
+                    message: ${contextual_tip_1}
+
+                description: ${task_description_1}
+
+                code_example:
+                    language: ${language_1}
+                    content: |
+                        ${code_example_1}
+
+              - task_number: ${task_number_2}
+                task_title: ${task_title_2}
+                description: ${task_description_2}
+
+                code_example:
+                    language: ${language_2}
+                    content: |
+                        ${code_example_2}
+
+              - task_number: ${task_number_3}
+                task_title: ${task_title_3}
+
+                warning:
+                    icon: ${warning_icon}
+                    type: ${warning_type}
+                    message: ${warning_message}
+
+                special_section:
+                    title: ${special_section_title}
+                    content: ${special_section_content}
+
+                implementation_guidelines: ${task_implementation_guidelines}
+                implementation_details: ${implementation_details}
+
+                code_example:
+                    language: ${language_3}
+                    content: |
+                        ${code_example_3}
+
+          checkpoint:
+              number: ${checkpoint_number}
+              title: ${checkpoint_title}
+              deliverables:
+                  - ${deliverable_1}
+                  - ${deliverable_2}
+                  - ${deliverable_3}
+                  - ${deliverable_4}
+                  - ${deliverable_5}
+
+troubleshooting:
+    reference_guide:
+        title: ${error_guide_title}
+        path: "../../junior-dev-helper/${error_guide_file}"
+        description: "detailed solutions for all these issues and more"
+
+    common_issues:
+        - issue: ${issue_1}
+          solution: ${solution_1}
+
+        - issue: ${issue_2}
+          solution: ${solution_2}
+
+        - issue: ${issue_3}
+          solution: ${solution_3}
+
+        - issue: ${issue_4}
+          solution: ${solution_4}
+
+performance_considerations:
+    - area: ${perf_area_1}
+      requirements:
+          - type: "MUST"
+            requirement: ${perf_requirement_1}
+          - type: "Target"
+            requirement: ${perf_target_1}
+          - type: "Conditional"
+            condition: ${perf_condition_1}
+            action: ${perf_action_1}
+
+    - area: ${perf_area_2}
+      requirements:
+          - type: "MUST"
+            requirement: ${perf_requirement_2}
+      guidelines:
+          - ${perf_guideline_1}
+          - ${perf_guideline_2}
+          - ${perf_guideline_3}
+
+    - area: ${perf_area_3}
+      strategies:
+          - ${perf_strategy_1}
+          - ${perf_strategy_2}
+          - ${perf_strategy_3}
+
+    - area: ${perf_area_4}
+      requirements:
+          - ${perf_requirement_3}
+          - ${perf_requirement_4}
+
+security_requirements:
+    enforcement: "NON-NEGOTIABLE"
+    recovery_paths_provided: true
+
+    categories:
+        - name: ${security_category_1}
+          rules:
+              - type: "MUST NOT"
+                action: ${prohibited_action_1}
+
+          alternatives:
+              - ${alternative_1}
+              - ${alternative_2}
+              - ${alternative_3}
+
+          documentation:
+              if_needed: ${special_need}
+              document_in: "security review"
+
+        - name: ${security_category_2}
+          rules:
+              - type: "MUST"
+                action: ${required_action_1}
+                items: ${items_1}
+              - type: "SHOULD"
+                action: ${recommended_action}
+                items: ${items_2}
+
+          failure_handling:
+              mode: ${failure_mode}
+              action: "${failure_action}"
+
+          testing:
+              command: ${test_command}
+
+        - name: ${security_category_3}
+          rules:
+              - type: "MUST"
+                requirement: ${security_requirement_1}
+
+          alternatives:
+              condition: ${condition}
+              action: ${alternative_action}
+
+          documentation:
+              path: ${security_doc_path}
+
+        - name: ${security_category_4}
+          rules:
+              - type: "MUST"
+                requirement: ${validation_requirement}
+              - type: "Use"
+                requirement: ${standard_format}
+              - type: "Error"
+                handling: ${error_handling}
+
+    incident_recovery:
+        trigger: ${security_incident}
+        steps:
+            - ${immediate_action}
+            - "Document incident in `${incident_log_path}`"
+            - "Run `${remediation_command}` if available"
+            - "Add test to prevent recurrence"
+
+success_criteria:
+    - ${success_criterion_1}
+    - ${success_criterion_2}
+    - ${success_criterion_3}
+    - ${success_criterion_4}
+    - ${success_criterion_5}
+    - ${success_criterion_6}
+
+junior_developer_path:
+    target_area: ${technology_area}
+
+    learning_progression:
+        - step: 1
+          focus: "Start with Concepts"
+          guide: ${intro_guide}
+          file: ${intro_guide_file}
+          learn: ${fundamental_concept}
+
+        - step: 2
+          focus: "Learn ${skill_1}"
+          guide: ${skill_1_guide}
+          file: ${skill_1_file}
+          topics: ${skill_1_topics}
+
+        - step: 3
+          focus: "Understand ${critical_concept}"
+          priority: "CRITICAL"
+          guide: ${critical_guide}
+          file: ${critical_file}
+          before: ${critical_action}
+
+        - step: 4
+          focus: "Master ${skill_2}"
+          guide: ${skill_2_guide}
+          file: ${skill_2_file}
+          topics: ${skill_2_topics}
+
+        - step: 5
+          focus: "Explore ${skill_3}"
+          guide: ${skill_3_guide}
+          file: ${skill_3_file}
+          description: ${skill_3_description}
+
+        - step: 6
+          focus: "Practice TDD"
+          guide: ${tdd_examples}
+          file: ${tdd_file}
+
+        - step: 7
+          focus: "Debug Issues"
+          guide: ${debug_guide}
+          file: ${debug_file}
+          purpose: "troubleshooting"
+
+    key_reminders:
+        - ${critical_warning_1}
+        - ${critical_warning_2}
+        - ${critical_warning_3}
+        - ${best_practice}
+
+escalation:
+    when_stuck:
+        timeout_hours: ${block_timeout}
+        actions:
+            - "Document the issue in `${blockers_path}`"
+            - "Try alternative approach from guides"
+            - "Continue with next task if possible"
+            - "Mark blocked item for review"
+
+    common_blockers:
+        - type: ${blocker_type_1}
+          recovery:
+              - ${recovery_action_1}
+              - ${documentation_action_1}
+              - ${planning_action_1}
+
+        - type: ${blocker_type_2}
+          recovery:
+              - ${recovery_action_2}
+              - ${documentation_action_2}
+              - ${monitoring_action}
+
+        - type: ${blocker_type_3}
+          recovery:
+              - ${recovery_action_3}
+              - ${minimal_version_action}
+              - ${documentation_action_3}
+
+        - type: ${blocker_type_4}
+          recovery:
+              - ${skip_criteria}
+              - ${documentation_action_4}
+              - "MUST not skip ${critical_tests}"
+
+next_phase:
+    number: ${next_phase_number}
+    focus: ${next_phase_focus}
+    features:
+        - ${next_feature_1}
+        - ${next_feature_2}
+        - ${next_feature_3}
+        - ${next_feature_4}
+
+appendix:
+    verification_script:
+        name: "verify-phase-${phase_number}.sh"
+        location: "scripts/"
+
+        content: |
+            #!/bin/bash
+            set -e
+
+            echo "=== Phase ${phase_number} ${phase_title} Verification ==="
+
+            # Check ${check_1_name}
+            echo "1. Checking ${check_1_target}..."
+            if ${check_1_command}; then
+                echo "✓ ${check_1_success}"
+            else
+                echo "✗ ${check_1_failure}"
+                exit 1
+            fi
+
+            # Check ${check_2_name}
+            echo "2. Checking ${check_2_target}..."
+            ${check_2_logic}
+            echo "   ${check_2_output}"
+            if ${check_2_condition}; then
+                echo "⚠️  Warning: ${check_2_warning}"
+            fi
+
+            # Check ${check_3_name}
+            echo "3. Checking ${check_3_target}..."
+            if [ "$${env_var}" = "${env_value}" ]; then
+                # ${check_3_comment}
+                if ${check_3_command}; then
+                    echo "✓ ${check_3_success}"
+                else
+                    echo "✗ ${check_3_failure}"
+                fi
+            fi
+
+            echo "=== Basic verification complete ==="
+
+        make_executable: "chmod +x scripts/verify-phase-${phase_number}.sh"
