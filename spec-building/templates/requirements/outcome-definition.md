@@ -9,6 +9,9 @@ Replace all examples with your project-specific outcomes. Be as specific and mea
 **What business problem are we solving?**
 [Example: Reduce customer support tickets by 40% by providing self-service capabilities]
 
+**Real Example from TaskMaster:**
+Reduce project management overhead by 40% by providing an intuitive task management system that eliminates the need for multiple tools and manual status tracking.
+
 ### Success Metrics
 | Metric | Current State | Target State | Measurement Method |
 |--------|--------------|--------------|-------------------|
@@ -16,12 +19,26 @@ Replace all examples with your project-specific outcomes. Be as specific and mea
 | [Metric 2] | [Current] | [Target] | [How measured] |
 | [Metric 3] | [Current] | [Target] | [How measured] |
 
+**TaskMaster Example:**
+| Metric | Current State | Target State | Measurement Method |
+|--------|--------------|--------------|-------------------|
+| Time on status updates | 5 hours/week per team | 2 hours/week per team | Time tracking analysis |
+| Task completion visibility | 60% (manual checking) | 95% (real-time dashboard) | System metrics |
+| Project on-time delivery | 65% | 85% | Project completion data |
+| Tool consolidation | 4 different tools | 1 integrated system | Tool inventory |
+
 ### Business Value
 **Quantify the value of achieving these outcomes:**
 - Cost savings: [Example: $50k/month in support costs]
 - Revenue increase: [Example: 20% more upgrades due to better UX]
 - Efficiency gains: [Example: 3 FTE equivalent time saved]
 - Risk reduction: [Example: 90% fewer security incidents]
+
+**TaskMaster Example Value Quantification:**
+- Cost savings: $30k/month in reduced coordination time (100 users × 3 hours/week × $50/hour)
+- Revenue increase: 15% more projects completed due to efficiency gains
+- Efficiency gains: 2 FTE equivalent time saved across organization
+- Risk reduction: 75% fewer missed deadlines due to visibility
 
 ### Timeline Criticality
 **Why now? What happens if we delay?**

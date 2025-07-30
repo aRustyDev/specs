@@ -1,4 +1,13 @@
-# Repository SPEC Generation Prompt
+# Repository Spec Process
+
+---
+Previous: [Greenfield Spec Process](01-greenfield-spec-process.md)
+Next: [Spec Quality Review](03-spec-quality-review.md)
+Related:
+  - [Greenfield Spec Process](01-greenfield-spec-process.md) - For new projects
+  - [Spec Quality Review](03-spec-quality-review.md) - Quality assurance process
+  - [Roadmap Creation](../02-planning/01-spec-to-roadmap.md) - Next step after approval
+---
 
 ## Context
 You are tasked with analyzing a repository and generating a comprehensive SPEC.md file following a systematic methodology. You will reverse-engineer requirements from the existing codebase, identify patterns, and create detailed specifications.
@@ -140,7 +149,7 @@ Before starting, ensure you have access to:
     - Generate modular spec files for logical components
 
 11. **Create Modular Specs**
-    Generate `.claude/.spec/` directory with:
+    Generate `spec/` directory with:
     - Component-specific specifications
     - Interface definitions
     - Integration requirements

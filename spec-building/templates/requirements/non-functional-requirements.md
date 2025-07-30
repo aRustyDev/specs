@@ -14,6 +14,14 @@ Define measurable quality attributes for the system. Replace examples with your 
 | Report Generation | 5s | 10s | 30s | 60s |
 | File Upload (per MB) | 1s | 2s | 3s | 5s |
 
+**Example from TaskMaster Project:**
+| Operation Type | Target (p50) | Target (p95) | Target (p99) | Max Acceptable |
+|----------------|--------------|--------------|--------------|----------------|
+| Dashboard Load | 0.8s | 2s | 3s | 5s |
+| Task Create API | 50ms | 200ms | 500ms | 1s |
+| Task Search | 100ms | 200ms | 500ms | 1s |
+| Real-time Update | 200ms | 500ms | 1s | 2s |
+
 ### Throughput
 | Metric | Target | Burst Capacity | Degradation Plan |
 |--------|--------|----------------|------------------|
@@ -21,6 +29,14 @@ Define measurable quality attributes for the system. Replace examples with your 
 | Requests/Second | 5,000 | 7,500 | Rate limit |
 | Data Ingestion/Hour | 10GB | 15GB | Batch delay |
 | Messages/Second | 1,000 | 2,000 | Priority queue |
+
+**TaskMaster Example:**
+| Metric | Target | Burst Capacity | Degradation Plan |
+|--------|--------|----------------|------------------|
+| Concurrent Users | 1,000 | 1,500 | Cached dashboards |
+| API Requests/Second | 500 | 750 | Rate limit by user |
+| Task Updates/Hour | 100,000 | 150,000 | Queue writes |
+| WebSocket Messages/Sec | 200 | 400 | Batch updates |
 
 ### Resource Utilization
 - CPU Usage: <70% average, <90% peak

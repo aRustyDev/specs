@@ -1,4 +1,12 @@
-# Spec Building Process v3.0 - Comprehensive Edition
+# Greenfield Spec Process
+
+---
+Next: [Spec Quality Review](03-spec-quality-review.md)
+Related: 
+  - [Repository Spec Process](02-repository-spec-process.md) - For existing codebases
+  - [Spec Quality Review](03-spec-quality-review.md) - Quality assurance process
+  - [Roadmap Creation](../02-planning/01-spec-to-roadmap.md) - Next step after approval
+---
 
 ## Overview
 A depth-first, outcome-focused approach to building extremely robust software specifications that serve as the definitive source for all downstream planning and implementation.
@@ -23,12 +31,12 @@ A depth-first, outcome-focused approach to building extremely robust software sp
 1. **Generate Required Templates**
    ```
    Templates to create:
-   - .claude/.spec/templates/outcome-definition.md
-   - .claude/.spec/templates/user-journey-detailed.md
-   - .claude/.spec/templates/acceptance-scenarios.md
-   - .claude/.spec/templates/non-functional-requirements.md
-   - .claude/.spec/templates/constraints-assumptions.md
-   - .claude/.spec/templates/success-metrics.md
+   - ../templates/requirements/outcome-definition.md
+   - ../templates/requirements/user-journey-detailed.md
+   - ../templates/requirements/acceptance-scenarios.md
+   - ../templates/requirements/non-functional-requirements.md
+   - ../templates/requirements/constraints-assumptions.md
+   - ../templates/requirements/success-metrics.md
    ```
 
 2. **User Interaction**

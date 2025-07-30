@@ -320,14 +320,21 @@ performance_considerations:
           - ${perf_requirement_4}
 
 security_requirements:
-    enforcement: "NON-NEGOTIABLE"
+    enforcement: "CRITICAL - Deviations require documented approval"
     recovery_paths_provided: true
+    exception_process: |
+        If security requirement cannot be met:
+        1. Document the specific constraint
+        2. Propose alternative mitigation
+        3. Get security team approval
+        4. Add to risk register with monitoring plan
 
     categories:
         - name: ${security_category_1}
           rules:
-              - type: "MUST NOT"
+              - type: "MUST NOT (unless approved)"
                 action: ${prohibited_action_1}
+                exception_path: "See exception_process above"
 
           alternatives:
               - ${alternative_1}

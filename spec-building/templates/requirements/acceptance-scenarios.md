@@ -20,12 +20,59 @@ For each user story or feature, create concrete scenarios that demonstrate the f
 3. **Then**: [Expected outcome]
 4. **And**: [Additional outcomes]
 
+### Real Example: SCAN-002 - Task Creation and Assignment
+**Feature**: Task Management
+**User Story**: As a project manager, I want to create and assign tasks quickly so that my team knows what to work on
+
+#### Preconditions
+- [x] User logged in with PM role
+- [x] At least one project exists
+- [x] Team members imported/invited
+
+#### Steps
+1. **Given**: User on project dashboard
+2. **When**: User clicks "+" or presses "T" hotkey
+3. **Then**: Quick task modal appears with cursor in title field
+4. **When**: User types "Design new login screen"
+5. **And**: Presses Tab and types "Create mockups for updated login with SSO option"
+6. **And**: Types "@alex" in assignee field
+7. **Then**: Alex Developer appears in dropdown
+8. **When**: User selects Alex and sets due date to "Friday"
+9. **Then**: System calculates actual date (2024-03-15)
+10. **When**: User presses Enter or clicks "Create Task"
+11. **Then**: Task created instantly
+12. **And**: Alex receives notification in-app and via Slack
+13. **And**: Task appears in dashboard with "New" badge
+
 #### Test Data
 ```
 Specific data needed:
 - User: [Example user details]
 - Input: [Example input values]
 - Expected Output: [Exact expected results]
+```
+
+**TaskMaster Example Test Data:**
+```json
+{
+  "task": {
+    "title": "Design new login screen",
+    "description": "Create mockups for updated login with SSO option",
+    "assignee": "alex.dev@techcorp.com",
+    "dueDate": "relative:friday",
+    "priority": "medium",
+    "labels": ["design", "frontend"]
+  },
+  "expectedResponse": {
+    "status": 201,
+    "responseTime": "<500ms",
+    "notification": {
+      "slack": true,
+      "inApp": true,
+      "email": false
+    }
+  }
+}
 ```
 
 #### Acceptance Criteria

@@ -1,0 +1,364 @@
+# Review Plan Template - YAML Format for Quality Assurance
+phase:
+    number: ${phase_number}
+    title: ${phase_title}
+    review_focus: ${primary_review_objectives}
+    expected_duration: "${review_hours} hours per checkpoint"
+
+review_prerequisites:
+    worker_deliverables:
+        required:
+            - path: "${project_path}/.claude/.plan/phase-${phase_number}/WORK_PLAN.md"
+              description: "The work plan being followed"
+            - path: "Source code changes"
+              description: "All code modifications for this checkpoint"
+            - path: "Test results"
+              description: "Output from test suite execution"
+            - path: "${project_path}/.claude/.reviews/phase-${phase_number}-checkpoint-${checkpoint}-questions.md"
+              description: "Any questions from the worker (if exists)"
+
+    review_resources:
+        - path: "${project_path}/.claude/SPEC.md"
+          description: "Original specification for requirement validation"
+        - path: "${project_path}/.claude/.spec/*"
+          description: "Detailed specifications by component"
+        - path: "${project_path}/.claude/junior-dev-helper/*"
+          description: "Guidelines and best practices"
+        - path: "${project_path}/.claude/ROADMAP.md"
+          description: "Overall project phases and goals"
+
+review_methodology:
+    type: "Quality-Driven Progressive Review"
+    
+    principles:
+        - name: "Test-First Verification"
+          description: "Verify TDD was followed - tests written before implementation"
+        - name: "Incremental Validation"
+          description: "Review only current + previous checkpoints, not future work"
+        - name: "Constructive Feedback"
+          description: "Focus on actionable improvements, not just problems"
+        - name: "Documentation Focus"
+          description: "Ensure knowledge capture for future maintainers"
+
+    review_phases:
+        - phase: "Code Quality Review"
+          time_estimate: "${code_review_time} minutes"
+          focus:
+              - "TDD compliance - were tests written first?"
+              - "Code clarity and maintainability"
+              - "Adherence to project patterns"
+              - "Error handling completeness"
+              
+        - phase: "Test Coverage Analysis"
+          time_estimate: "${test_review_time} minutes"
+          focus:
+              - "Test completeness for requirements"
+              - "Edge case coverage"
+              - "Test quality and assertions"
+              - "Performance test presence"
+              
+        - phase: "Documentation Review"
+          time_estimate: "${doc_review_time} minutes"
+          focus:
+              - "Code comments adequacy"
+              - "API documentation completeness"
+              - "README updates if needed"
+              - "Architecture decision records"
+
+checkpoint_reviews:
+    - checkpoint: ${checkpoint_number_1}
+      title: ${checkpoint_title_1}
+      estimated_time: "${checkpoint_1_hours} hours"
+      
+      mandatory_checks:
+          code_quality:
+              - check: "All code follows ${language} style guide"
+                severity: "blocking"
+              - check: "No commented-out code or debug prints"
+                severity: "must-fix"
+              - check: "Functions/methods under ${complexity_limit} lines"
+                severity: "should-fix"
+              - check: "Clear variable and function names"
+                severity: "must-fix"
+                
+          tdd_compliance:
+              - check: "Tests exist for all new functionality"
+                severity: "blocking"
+                exception: "Spike/exploration code with documented plan to add tests within 24 hours"
+              - check: "Tests were written before implementation"
+                severity: "blocking"
+                verification: "Check commit history or ask developer"
+                exception: "Complex refactoring where tests need updating - document approach"
+              - check: "Tests cover happy path and error cases"
+                severity: "must-fix"
+                guidance: "If edge cases unclear, document assumptions and add TODO"
+              - check: "Tests are isolated and independent"
+                severity: "must-fix"
+                guidance: "Minor coupling acceptable if documented and planned for cleanup"
+                
+          ${feature_1}_specific:
+              - check: "${feature_1_requirement_1}"
+                severity: "blocking"
+              - check: "${feature_1_requirement_2}"
+                severity: "must-fix"
+              - check: "${feature_1_security_check}"
+                severity: "blocking"
+                
+      review_outputs:
+          - file: "${project_path}/.claude/.reviews/phase-${phase_number}-checkpoint-${checkpoint_number_1}-feedback.md"
+            content: "Detailed feedback with specific line references"
+          - file: "${project_path}/.claude/.reviews/phase-${phase_number}-checkpoint-${checkpoint_number_1}-review-v1.md"
+            content: "Review notes and decision rationale"
+            
+    - checkpoint: ${checkpoint_number_2}
+      title: ${checkpoint_title_2}
+      estimated_time: "${checkpoint_2_hours} hours"
+      
+      mandatory_checks:
+          integration:
+              - check: "Component integrates with ${dependent_component}"
+                severity: "blocking"
+              - check: "API contracts match specification"
+                severity: "blocking"
+              - check: "Error propagation handled correctly"
+                severity: "must-fix"
+                
+          performance:
+              - check: "Response time under ${response_time_limit}"
+                severity: "should-fix"
+              - check: "Memory usage reasonable"
+                severity: "should-fix"
+              - check: "No obvious performance anti-patterns"
+                severity: "must-fix"
+
+quality_criteria:
+    code_standards:
+        test_coverage:
+            minimum: ${min_coverage_percent}
+            target: ${target_coverage_percent}
+            measurement: "Use coverage tool: `${coverage_command}`"
+            
+        code_quality:
+            linting: "Zero errors from `${lint_command}`"
+            formatting: "Consistent with `${format_command}`"
+            complexity: "Cyclomatic complexity < ${complexity_threshold}"
+            
+        documentation:
+            public_apis: "100% documented with examples"
+            complex_logic: "Inline comments explaining why"
+            setup_steps: "README updated if changed"
+            
+    tdd_verification:
+        evidence_required:
+            - "Test files created/modified before implementation files"
+            - "Test failures before implementation (red phase)"
+            - "Minimal implementation to pass tests (green phase)"
+            - "Refactoring with tests still passing"
+            
+        anti_patterns_to_flag:
+            - "Tests that never fail"
+            - "Tests without assertions"
+            - "Implementation without corresponding tests"
+            - "Tests that test the mock, not the code"
+            
+    security_review:
+        mandatory_checks:
+            - "No secrets or credentials in code"
+            - "Input validation on all external data"
+            - "SQL injection prevention (parameterized queries)"
+            - "XSS prevention (output encoding)"
+            - "Authentication/authorization checks"
+            
+        ${specific_security_checks}
+
+feedback_guidelines:
+    structure:
+        summary:
+            - "Overall assessment (Approved/Needs Work/Blocked)"
+            - "Key achievements to recognize"
+            - "Critical issues requiring attention"
+            
+        detailed_feedback:
+            format: |
+                ## ${Category}
+                
+                ### Issue: ${Brief description}
+                **Severity**: ${blocking|must-fix|should-fix|consider}
+                **Location**: ${file}:${line_numbers}
+                
+                **Current code**:
+                ```${language}
+                ${code_snippet}
+                ```
+                
+                **Recommendation**:
+                ${specific_improvement_suggestion}
+                
+                **Example**:
+                ```${language}
+                ${improved_code_example}
+                ```
+                
+        positive_reinforcement:
+            - "Highlight excellent patterns to encourage"
+            - "Note good test coverage areas"
+            - "Acknowledge complex problems solved well"
+            
+    tone:
+        - "Professional and constructive"
+        - "Specific and actionable"
+        - "Educational where possible"
+        - "Respectful of effort invested"
+
+review_workflow:
+    preparation:
+        - step: "Read checkpoint expectations from WORK_PLAN"
+        - step: "Check for questions in checkpoint-questions.md"
+        - step: "Set up testing environment"
+        - step: "Pull latest code changes"
+        
+    execution:
+        - step: "Run test suite and verify all pass"
+          details: |
+              - Execute: ${test_command}
+              - Check coverage report meets minimum threshold
+              - Verify no tests are skipped without explanation
+        - step: "Review code changes file by file"
+          details: |
+              - Start with core business logic files
+              - Then review test files
+              - Finally check documentation updates
+              - Use diff view to see all changes in context
+        - step: "Verify TDD was followed"
+          details: |
+              - Check commit history: test commits before implementation
+              - Look for test-first patterns in code structure
+              - Verify tests actually test behavior, not implementation
+        - step: "Check against quality criteria"
+          details: |
+              - Run linter: ${lint_command}
+              - Check complexity metrics
+              - Verify naming conventions followed
+              - Ensure error handling present
+        - step: "Document findings as you go"
+          details: |
+              - Note issues with file:line references
+              - Categorize by severity
+              - Include positive feedback for good patterns
+        
+    completion:
+        - step: "Answer any questions in checkpoint-questions.md"
+        - step: "Write comprehensive feedback"
+        - step: "Make approval/rejection decision"
+        - step: "Commit review artifacts"
+        - step: "Notify worker of completion"
+
+common_issues_to_check:
+    testing:
+        - issue: "Tests missing for error cases"
+          severity: "must-fix"
+          guidance: "Every happy path needs corresponding error tests"
+          
+        - issue: "Tests too tightly coupled to implementation"
+          severity: "should-fix"
+          guidance: "Test behavior, not implementation details"
+          
+    code_quality:
+        - issue: "Large functions doing too much"
+          severity: "should-fix"
+          guidance: "Extract to smaller, focused functions"
+          
+        - issue: "Unclear variable names"
+          severity: "must-fix"
+          guidance: "Names should express intent"
+          
+    documentation:
+        - issue: "Missing API documentation"
+          severity: "must-fix"
+          guidance: "Public APIs need full docs with examples"
+          
+        - issue: "Outdated comments"
+          severity: "must-fix"
+          guidance: "Comments must match current code"
+          
+    ${domain_specific_issues}
+
+helper_references:
+    tdd_guidance: "${project_path}/.claude/junior-dev-helper/tdd-best-practices.md"
+    code_standards: "${project_path}/.claude/junior-dev-helper/${language}-style-guide.md"
+    testing_patterns: "${project_path}/.claude/junior-dev-helper/testing-patterns.md"
+    common_mistakes: "${project_path}/.claude/junior-dev-helper/common-mistakes.md"
+    
+    review_helpers:
+        - description: "How to verify TDD compliance"
+          file: "tdd-verification-guide.md"
+        - description: "Security review checklist"
+          file: "security-checklist.md"
+        - description: "Performance review guide"
+          file: "performance-review.md"
+
+escalation:
+    blocking_issues:
+        definition: "Issues that prevent progress or create security risks"
+        action: "Document in feedback, mark as BLOCKED, suggest fixes"
+        
+    quality_concerns:
+        definition: "Code works but doesn't meet standards"
+        action: "Provide specific improvement guidance"
+        
+    process_violations:
+        definition: "TDD not followed, tests written after code"
+        action: "Educate on importance, require correction"
+        
+    excellent_work:
+        definition: "Exceptional quality worth recognizing"
+        action: "Document patterns for others to follow"
+
+documentation_updates:
+    required_updates:
+        - trigger: "New API endpoints added"
+          action: "Update API documentation"
+          location: "${project_path}/docs/api/"
+          
+        - trigger: "Configuration changes"
+          action: "Update deployment docs"
+          location: "${project_path}/docs/deployment/"
+          
+        - trigger: "New patterns established"
+          action: "Update developer guide"
+          location: "${project_path}/.claude/junior-dev-helper/"
+          
+        - trigger: "Common issues found"
+          action: "Update troubleshooting guide"
+          location: "${project_path}/.claude/junior-dev-helper/troubleshooting.md"
+
+review_metrics:
+    track_for_improvement:
+        - metric: "Time per checkpoint review"
+          target: "< ${target_review_hours} hours"
+        - metric: "Issues found per checkpoint"
+          target: "Decreasing trend"
+        - metric: "Rework required"
+          target: "< ${rework_threshold}%"
+        - metric: "TDD compliance"
+          target: "100%"
+          
+    review_effectiveness:
+        - "Are we catching issues early?"
+        - "Is feedback actionable?"
+        - "Are patterns improving?"
+        - "Is technical debt managed?"
+
+phase_completion:
+    criteria:
+        - "All checkpoints reviewed and approved"
+        - "All blocking issues resolved"
+        - "Test coverage meets requirements"
+        - "Documentation updated"
+        - "No critical security issues"
+        
+    deliverables:
+        - "All review feedback files"
+        - "Updated documentation"
+        - "Lessons learned summary"
+        - "Recommendations for next phase"

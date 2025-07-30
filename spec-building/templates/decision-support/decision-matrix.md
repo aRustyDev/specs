@@ -22,6 +22,17 @@ This template replaces repetitive validation cycles with a structured decision f
 - [ ] Resource constraints applied
 ```
 
+**Real Example - TaskMaster Priority Matrix**
+| Requirement | Priority | Rationale | Dependencies |
+|-------------|----------|-----------|---------------|
+| User Auth | Must | Security foundation | None |
+| Task CRUD | Must | Core functionality | User Auth |
+| Real-time Updates | Must | Key differentiator | Task CRUD |
+| Search | Must | Usability requirement | Task CRUD |
+| Slack Integration | Should | Adoption driver | Notifications |
+| Mobile Apps | Could | Phase 2 candidate | Web stable |
+| AI Predictions | Won't | Future enhancement | - |
+
 **Trade-off Decisions**
 ```markdown
 | Trade-off | Option A | Option B | Decision | Rationale |
@@ -83,6 +94,39 @@ This template replaces repetitive validation cycles with a structured decision f
 - [ ] All components compatible
 - [ ] Version conflicts resolved
 - [ ] Licenses compatible
+```
+
+**TaskMaster Real-time Architecture Decision Example**
+```markdown
+## Decision: Real-time Updates Architecture
+
+**Options Considered:**
+1. WebSockets with Socket.io - Bidirectional, mature, fallback support
+2. Server-Sent Events (SSE) - Simple, one-way, HTTP-based
+3. Long Polling - Compatible, inefficient, higher latency
+
+**Decision Matrix:**
+| Criteria | Weight | WebSockets | SSE | Long Polling |
+|----------|--------|------------|-----|--------------|
+| Latency | 30% | 10 (300ms) | 8 (500ms) | 5 (2s) |
+| Scalability | 25% | 8 | 9 | 6 |
+| Complexity | 20% | 6 | 9 | 10 |
+| Browser Support | 15% | 9 | 7 | 10 |
+| Team Experience | 10% | 8 | 5 | 9 |
+| **Total Score** | | **8.15** | **7.85** | **7.25** |
+
+**Decision:** WebSockets with Socket.io
+
+**Rationale:**
+- Best latency for real-time collaboration
+- Socket.io provides automatic fallback
+- Team has prior experience
+- Proven at scale (Slack, Trello use it)
+
+**Consequences:**
+- Positive: Sub-second updates, reliable reconnection
+- Negative: More complex than SSE, stateful connections
+- Mitigations: Use Redis adapter for scaling, implement heartbeat
 ```
 
 ### 3. Quality Decisions

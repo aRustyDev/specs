@@ -204,7 +204,7 @@ Find and evaluate options for [specific need]
 - Make preliminary recommendation
 
 ### Output Location
-Write findings to: `.spec/research/[area]-options.md`
+Write findings to: `spec/research/[area]-options.md`
 
 ### Stop When
 - Found 3 options meeting criteria
