@@ -1,0 +1,39 @@
+{
+  "spec_file": "example-project/spec/SPEC.md",
+  "total_score": 73,
+  "dimension_scores": {
+    "completeness": 12,
+    "clarity": 23,
+    "implementability": 16,
+    "testability": 22
+  },
+  "details": {
+    "completeness": {
+      "core_sections": "0/6 sections found (0/10)",
+      "requirements": "6 functional, 5 non-functional (8/8)",
+      "cross_references": "0 internal links (2/4)",
+      "placeholders": "1 found (2/3)"
+    },
+    "clarity": {
+      "language_precision": "26 quantified metrics (8/8)",
+      "consistency": "Header consistency good (7/7)",
+      "structure_flow": "Section flow score (6/6)",
+      "visual_aids": "0 diagrams, 13 tables (2/4)"
+    },
+    "implementability": {
+      "technical_feasibility": "0 justified tech choices (6/10)",
+      "resources": "Timeline: True, Team: True, Budget: True (6/6)",
+      "dependencies": "0 dependency mentions (2/5)",
+      "risk_mitigation": "4 risk-related mentions (2/4)"
+    },
+    "testability": {
+      "measurable_requirements": "6 measurable thresholds (8/10)",
+      "test_scenarios": "6 test scenario mentions (6/8)",
+      "acceptance_criteria": "7 acceptance criteria sections (3/3)",
+      "baseline_data": "5 baseline mentions (2/2)",
+      "quality_metrics": "12 quality metric mentions (3/3)"
+    }
+  },
+  "status": "\u274c REQUIRES IMPROVEMENT",
+  "risk": "Very high risk - do not proceed"
+}

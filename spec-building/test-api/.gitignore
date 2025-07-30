@@ -1,0 +1,25 @@
+# Spec building artifacts
+*.log
+*.tmp
+.DS_Store
+
+# Validation reports
+*-report.json
+*-validation.json
+validation/*.json
+validation/*.html
+
+# Review artifacts
+review/*.md
+!review/README.md
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.bak
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/

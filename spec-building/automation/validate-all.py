@@ -1,298 +1,265 @@
 #!/usr/bin/env python3
 """
-Run All Spec Validations
-Comprehensive validation suite for spec quality.
+Run all spec validation scripts in sequence.
+
+This tool provides a comprehensive validation suite that checks:
+- Structure and completeness
+- Quality scoring
+- Link validation
+- Requirements traceability
+- Improvement suggestions
+
+Use this before major reviews or as a CI/CD gate.
 """
 
-import os
 import sys
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple, Dict
+import json
+from datetime import datetime
 
-class ValidationRunner:
-    def __init__(self, spec_path: str):
-        self.spec_path = Path(spec_path).resolve()
-        self.scripts_dir = Path(__file__).parent
-        self.results = {}
-        self.passed = 0
-        self.failed = 0
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent))
+try:
+    from automation.lib.base import SpecTool
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent))
+    from lib.base import SpecTool
+
+class SpecValidationSuite(SpecTool):
+    """Run all spec validation scripts."""
+    
+    VERSION = "1.0.0"
+    DESCRIPTION = "Comprehensive spec validation suite"
+    
+    # Validation scripts to run in order
+    VALIDATORS = [
+        {
+            'name': 'Structure Validation',
+            'script': 'validation/validate-spec-structure.py',
+            'critical': True,
+            'args': []
+        },
+        {
+            'name': 'Quality Scoring',
+            'script': 'validation/score-spec-quality.py',
+            'critical': True,
+            'args': ['--strict']
+        },
+        {
+            'name': 'Link Validation',
+            'script': 'validation/validate-spec-links.py',
+            'critical': False,
+            'args': []
+        },
+        {
+            'name': 'Requirements Traceability',
+            'script': 'validation/validate-requirements-traceability.py',
+            'critical': False,
+            'args': []
+        }
+    ]
+    
+    def create_parser(self):
+        parser = super().create_parser()
+        parser.add_argument('spec_path',
+                          help='Path to SPEC.md file')
+        parser.add_argument('--stop-on-error', action='store_true',
+                          help='Stop at first validation failure')
+        parser.add_argument('--quiet', action='store_true',
+                          help='Minimal output')
+        parser.add_argument('--report', metavar='FILE',
+                          help='Save validation report to file')
+        parser.add_argument('--skip', nargs='+',
+                          choices=['structure', 'quality', 'links', 'traceability'],
+                          help='Skip specific validators')
+        return parser
+    
+    def get_examples(self):
+        return """
+Examples:
+  # Run all validations
+  %(prog)s spec/SPEC.md
+  
+  # Stop at first error (good for CI/CD)
+  %(prog)s spec/SPEC.md --stop-on-error
+  
+  # Generate report
+  %(prog)s spec/SPEC.md --report validation-report.json
+  
+  # Skip specific validators
+  %(prog)s spec/SPEC.md --skip links traceability
+"""
+    
+    def execute(self) -> int:
+        spec_path = Path(self.args.spec_path)
+        if not spec_path.exists():
+            print(f"✗ Spec file not found: {spec_path}")
+            return 1
         
-    def run_all(self):
-        """Run all validation scripts"""
-        print("🚀 COMPREHENSIVE SPEC VALIDATION")
-        print("="*60)
-        print(f"Spec: {self.spec_path}")
-        print(f"Scripts: {self.scripts_dir}")
-        print("="*60)
+        print(f"🔍 Running comprehensive validation for: {spec_path}")
+        print("=" * 60)
         
-        # Define validation scripts and their purposes
-        validations = [
-            {
-                "name": "Structure Validation",
-                "script": "validate-spec-structure.py",
-                "description": "Checks required sections and format"
-            },
-            {
-                "name": "Link Validation", 
-                "script": "validate-spec-links.py",
-                "description": "Verifies all internal links are valid"
-            },
-            {
-                "name": "Quality Scoring",
-                "script": "score-spec-quality.py",
-                "description": "Calculates spec quality score (target: 90+)"
-            },
-            {
-                "name": "Requirements Traceability",
-                "script": "validate-requirements-traceability.py",
-                "description": "Ensures requirements trace to implementation"
-            }
-        ]
+        results = []
+        overall_success = True
         
-        # Run each validation
-        for validation in validations:
-            self._run_validation(validation)
+        # Run each validator
+        for validator in self.VALIDATORS:
+            if self._should_skip(validator['name']):
+                continue
+                
+            result = self._run_validator(validator, spec_path)
+            results.append(result)
             
-        # Check for alignment if this is part of a project
-        if self._is_project_structure():
-            self._run_alignment_validation()
+            if not result['success'] and validator['critical']:
+                overall_success = False
+                if self.args.stop_on_error:
+                    break
+        
+        # Show summary
+        self._show_summary(results, overall_success)
+        
+        # Save report if requested
+        if self.args.report:
+            self._save_report(results, spec_path)
+        
+        # Check if improvement suggestions should be shown
+        if not overall_success and not self.args.quiet:
+            self._run_improvement_suggestions(spec_path)
+        
+        return 0 if overall_success else 1
+    
+    def _should_skip(self, validator_name: str) -> bool:
+        """Check if validator should be skipped."""
+        if not self.args.skip:
+            return False
             
-        # Generate improvement suggestions
-        self._run_improvement_analysis()
+        skip_map = {
+            'Structure Validation': 'structure',
+            'Quality Scoring': 'quality',
+            'Link Validation': 'links',
+            'Requirements Traceability': 'traceability'
+        }
         
-        # Final report
-        self._generate_final_report()
+        return skip_map.get(validator_name, '') in self.args.skip
+    
+    def _run_validator(self, validator: Dict, spec_path: Path) -> Dict:
+        """Run a single validator."""
+        if not self.args.quiet:
+            print(f"\n▶️  Running {validator['name']}...")
+            print("-" * 40)
         
-    def _run_validation(self, validation: dict):
-        """Run a single validation script"""
-        print(f"\n🔍 Running: {validation['name']}")
-        print(f"   {validation['description']}")
-        print("-" * 60)
+        # Build command
+        script_path = Path(__file__).parent / validator['script']
+        cmd = [sys.executable, str(script_path), str(spec_path)] + validator['args']
         
-        script_path = self.scripts_dir / validation["script"]
-        
+        # Run validator
         try:
             result = subprocess.run(
-                [sys.executable, str(script_path), str(self.spec_path)],
+                cmd,
                 capture_output=True,
                 text=True,
                 timeout=30
             )
             
-            # Check result
-            if result.returncode == 0:
-                self.results[validation["name"]] = {
-                    "status": "PASSED",
-                    "output": result.stdout
-                }
-                self.passed += 1
-                print("✅ PASSED")
-            else:
-                self.results[validation["name"]] = {
-                    "status": "FAILED",
-                    "output": result.stdout + "\n" + result.stderr
-                }
-                self.failed += 1
-                print("❌ FAILED")
-                
-            # Show key findings
-            if "score" in validation["script"].lower():
-                # Extract score from output
-                import re
-                score_match = re.search(r'TOTAL SCORE:\s*(\d+)/100', result.stdout)
-                if score_match:
-                    score = int(score_match.group(1))
-                    print(f"   Score: {score}/100")
-                    if score < 90:
-                        print(f"   ⚠️  Below target of 90")
-                        
+            success = result.returncode == 0
+            
+            if not self.args.quiet:
+                if success:
+                    print("✅ PASSED")
+                else:
+                    print("❌ FAILED")
+                    if result.stdout:
+                        print(result.stdout)
+                    if result.stderr:
+                        print(f"Error: {result.stderr}")
+            
+            return {
+                'name': validator['name'],
+                'success': success,
+                'critical': validator['critical'],
+                'output': result.stdout,
+                'error': result.stderr,
+                'return_code': result.returncode
+            }
+            
         except subprocess.TimeoutExpired:
-            self.results[validation["name"]] = {
-                "status": "TIMEOUT",
-                "output": "Validation timed out after 30 seconds"
-            }
-            self.failed += 1
             print("⏱️  TIMEOUT")
-            
-        except Exception as e:
-            self.results[validation["name"]] = {
-                "status": "ERROR",
-                "output": str(e)
+            return {
+                'name': validator['name'],
+                'success': False,
+                'critical': validator['critical'],
+                'output': '',
+                'error': 'Validation timed out',
+                'return_code': -1
             }
-            self.failed += 1
-            print(f"💥 ERROR: {e}")
-            
-    def _is_project_structure(self):
-        """Check if spec is part of a full project structure"""
-        project_dir = self.spec_path.parent.parent
-        return (
-            (project_dir / "roadmap").exists() or
-            (project_dir / "phase-plans").exists()
-        )
-        
-    def _run_alignment_validation(self):
-        """Run alignment validation for full project"""
-        print(f"\n🔄 Running: Document Alignment Validation")
-        print("   Checks consistency between spec, roadmap, and plans")
-        print("-" * 60)
-        
-        project_dir = self.spec_path.parent.parent
-        script_path = self.scripts_dir / "validate-alignment.py"
-        
-        try:
-            result = subprocess.run(
-                [sys.executable, str(script_path), str(project_dir)],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            if result.returncode == 0:
-                self.results["Alignment Validation"] = {
-                    "status": "PASSED",
-                    "output": result.stdout
-                }
-                self.passed += 1
-                print("✅ PASSED - Documents are aligned")
-            else:
-                self.results["Alignment Validation"] = {
-                    "status": "WARNING",
-                    "output": result.stdout
-                }
-                print("⚠️  WARNING - Alignment issues found")
-                
         except Exception as e:
             print(f"💥 ERROR: {e}")
-            
-    def _run_improvement_analysis(self):
-        """Generate improvement suggestions"""
-        print(f"\n💡 Running: Improvement Analysis")
-        print("   Generates specific suggestions for improvement")
-        print("-" * 60)
+            return {
+                'name': validator['name'],
+                'success': False,
+                'critical': validator['critical'],
+                'output': '',
+                'error': str(e),
+                'return_code': -1
+            }
+    
+    def _show_summary(self, results: List[Dict], overall_success: bool):
+        """Show validation summary."""
+        print("\n" + "=" * 60)
+        print("VALIDATION SUMMARY")
+        print("=" * 60)
         
-        script_path = self.scripts_dir / "suggest-spec-improvements.py"
+        passed = sum(1 for r in results if r['success'])
+        total = len(results)
         
-        try:
-            result = subprocess.run(
-                [sys.executable, str(script_path), str(self.spec_path)],
-                capture_output=True,
-                text=True,
-                timeout=30
-            )
-            
-            # Count suggestions
-            import re
-            high_priority = len(re.findall(r'HIGH PRIORITY.*?(\d+) items', result.stdout))
-            med_priority = len(re.findall(r'MEDIUM PRIORITY.*?(\d+) items', result.stdout))
-            
-            print(f"📝 Suggestions generated")
-            if high_priority > 0:
-                print(f"   🔴 High priority items found")
-                
-        except Exception as e:
-            print(f"💥 ERROR: {e}")
-            
-    def _generate_final_report(self):
-        """Generate final validation report"""
-        print("\n" + "="*60)
-        print("FINAL VALIDATION REPORT")
-        print("="*60)
+        print(f"\nValidations run: {total}")
+        print(f"Passed: {passed}")
+        print(f"Failed: {total - passed}")
         
-        # Summary
-        total = self.passed + self.failed
-        print(f"\n📊 Summary: {self.passed}/{total} validations passed")
+        if results:
+            print("\nDetails:")
+            for result in results:
+                status = "✅ PASS" if result['success'] else "❌ FAIL"
+                critical = " (critical)" if result['critical'] and not result['success'] else ""
+                print(f"  - {result['name']}: {status}{critical}")
         
-        # Quality gates
-        print("\n🚦 Quality Gates:")
+        print("\n" + "=" * 60)
         
-        # Extract quality score
-        quality_score = None
-        if "Quality Scoring" in self.results:
-            import re
-            score_match = re.search(r'TOTAL SCORE:\s*(\d+)/100', 
-                                  self.results["Quality Scoring"]["output"])
-            if score_match:
-                quality_score = int(score_match.group(1))
-                
-        if quality_score:
-            if quality_score >= 90:
-                print(f"  ✅ Quality Score: {quality_score}/100 - READY FOR STANDARD APPROVAL")
-            elif quality_score >= 85:
-                print(f"  ⚠️  Quality Score: {quality_score}/100 - CONDITIONAL APPROVAL")
-            elif quality_score >= 80:
-                print(f"  ⚠️  Quality Score: {quality_score}/100 - EXTENDED APPROVAL POSSIBLE")
-            else:
-                print(f"  ❌ Quality Score: {quality_score}/100 - REQUIRES IMPROVEMENT")
+        if overall_success:
+            print("\n🎉 All validations PASSED! Spec is ready for review.")
         else:
-            print(f"  ❓ Quality Score: Unable to determine")
-            
-        # Individual results
-        print("\n📋 Detailed Results:")
-        for name, result in self.results.items():
-            status_icon = {
-                "PASSED": "✅",
-                "FAILED": "❌",
-                "WARNING": "⚠️",
-                "TIMEOUT": "⏱️",
-                "ERROR": "💥"
-            }.get(result["status"], "❓")
-            
-            print(f"  {status_icon} {name}: {result['status']}")
-            
-        # Recommendations
-        print("\n📝 Next Steps:")
-        if self.failed > 0:
-            print("  1. Fix validation failures")
-            print("  2. Review improvement suggestions")
-            print("  3. Re-run validation")
-        elif quality_score and quality_score < 90:
-            print("  1. Review improvement suggestions")
-            print("  2. Implement high priority improvements")
-            print("  3. Target quality score of 90+")
-        else:
-            print("  ✅ Spec is ready to proceed!")
-            print("  1. Get stakeholder approval")
-            print("  2. Create implementation roadmap")
-            print("  3. Begin phase planning")
-            
-        # Save summary
-        summary_path = self.spec_path.parent / "validation-summary.txt"
-        with open(summary_path, 'w') as f:
-            f.write(f"Validation Summary\n")
-            f.write(f"==================\n\n")
-            f.write(f"Spec: {self.spec_path.name}\n")
-            f.write(f"Date: {subprocess.run(['date'], capture_output=True, text=True).stdout.strip()}\n")
-            f.write(f"Results: {self.passed}/{total} passed\n")
-            if quality_score:
-                f.write(f"Quality Score: {quality_score}/100\n")
-            f.write(f"\nDetailed results in individual report files.\n")
-            
-        print(f"\n📄 Summary saved to: {summary_path}")
-        print("="*60)
+            print("\n❌ Validation FAILED. Please address the issues above.")
+    
+    def _save_report(self, results: List[Dict], spec_path: Path):
+        """Save validation report to file."""
+        report = {
+            'spec_path': str(spec_path),
+            'timestamp': datetime.now().isoformat(),
+            'overall_success': all(r['success'] for r in results if r['critical']),
+            'results': results
+        }
+        
+        report_path = Path(self.args.report)
+        with open(report_path, 'w') as f:
+            json.dump(report, f, indent=2)
+        
+        print(f"\n📄 Validation report saved to: {report_path}")
+    
+    def _run_improvement_suggestions(self, spec_path: Path):
+        """Run improvement suggestions script."""
+        print("\n💡 Getting improvement suggestions...")
+        print("=" * 60)
+        
+        script_path = Path(__file__).parent / 'improvement' / 'suggest-spec-improvements.py'
+        if script_path.exists():
+            cmd = [sys.executable, str(script_path), str(spec_path)]
+            subprocess.run(cmd)
 
 def main():
-    """Main entry point"""
-    if len(sys.argv) != 2:
-        print("Usage: python validate-all.py <path-to-SPEC.md>")
-        print("\nThis runs all validation scripts:")
-        print("  - Structure validation")
-        print("  - Link validation")
-        print("  - Quality scoring")
-        print("  - Requirements traceability")
-        print("  - Alignment validation (if full project)")
-        print("  - Improvement suggestions")
-        sys.exit(1)
-        
-    spec_path = sys.argv[1]
-    
-    # Check spec exists
-    if not Path(spec_path).exists():
-        print(f"❌ Error: Spec file not found: {spec_path}")
-        sys.exit(1)
-        
-    runner = ValidationRunner(spec_path)
-    runner.run_all()
+    tool = SpecValidationSuite()
+    sys.exit(tool.run())
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()

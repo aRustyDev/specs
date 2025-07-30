@@ -1,0 +1,13 @@
+# Spec building artifacts
+*.log
+*.tmp
+.DS_Store
+
+# Validation reports
+*-report.json
+*-validation.json
+
+# Editor files
+.vscode/
+.idea/
+*.swp

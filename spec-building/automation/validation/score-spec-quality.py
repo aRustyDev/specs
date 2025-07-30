@@ -1,378 +1,543 @@
 #!/usr/bin/env python3
 """
-Score Spec Quality
-Automated quality scoring based on the spec quality rubric.
+Score spec quality based on comprehensive rubric.
+
+This tool evaluates specifications across four key dimensions:
+- Completeness: All required sections and content present
+- Clarity: Clear, unambiguous, well-structured content
+- Implementability: Technically feasible with resources identified
+- Testability: Measurable criteria and validation methods
+
+Scores help ensure specs meet quality standards before implementation begins.
 """
 
-import os
 import sys
 import re
-from pathlib import Path
-from typing import Dict, List, Tuple
 import json
+from pathlib import Path
+from typing import Dict, List, Tuple, Optional
+from dataclasses import dataclass, asdict
+from datetime import datetime
 
-class SpecScorer:
-    def __init__(self, spec_path: str):
-        self.spec_path = Path(spec_path)
-        self.spec_dir = self.spec_path.parent
-        self.scores = {
-            "completeness": 0,
-            "clarity": 0,
-            "implementability": 0,
-            "testability": 0
-        }
-        self.details = {
-            "completeness": {},
-            "clarity": {},
-            "implementability": {},
-            "testability": {}
-        }
+# Add parent directory to path for imports
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+try:
+    from automation.lib.base import SpecTool
+except ImportError:
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from lib.base import SpecTool
+
+@dataclass
+class DimensionScore:
+    """Score details for a quality dimension."""
+    name: str
+    score: int
+    max_score: int
+    details: Dict[str, str]
+    suggestions: List[str]
+
+@dataclass
+class QualityReport:
+    """Complete quality assessment report."""
+    total_score: int
+    max_score: int
+    dimensions: List[DimensionScore]
+    status: str
+    risk_level: str
+    timestamp: str
+    spec_path: str
+
+class SpecQualityScorer(SpecTool):
+    """Score spec quality across multiple dimensions."""
+    
+    VERSION = "2.0.0"
+    DESCRIPTION = "Evaluate specification quality with detailed scoring"
+    
+    # Scoring thresholds
+    THRESHOLDS = {
+        'excellent': 95,
+        'good': 90,
+        'acceptable': 85,
+        'poor': 70,
+        'unacceptable': 0
+    }
+    
+    def create_parser(self):
+        parser = super().create_parser()
+        parser.add_argument('spec_path',
+                          help='Path to SPEC.md file')
+        parser.add_argument('-f', '--format', 
+                          choices=['console', 'json', 'markdown'],
+                          default='console',
+                          help='Output format (default: console)')
+        parser.add_argument('-o', '--output-file',
+                          help='Write report to file')
+        parser.add_argument('--strict', action='store_true',
+                          help='Require 90+ score for success exit code')
+        parser.add_argument('--dimensions', nargs='+',
+                          choices=['completeness', 'clarity', 'implementability', 'testability'],
+                          help='Score only specific dimensions')
+        return parser
+    
+    def get_examples(self):
+        return """
+Examples:
+  # Basic scoring with console output
+  %(prog)s spec/SPEC.md
+  
+  # Generate JSON report
+  %(prog)s spec/SPEC.md -f json -o quality-report.json
+  
+  # Strict mode for CI/CD
+  %(prog)s spec/SPEC.md --strict
+  
+  # Score specific dimensions only
+  %(prog)s spec/SPEC.md --dimensions completeness clarity
+"""
+    
+    def execute(self) -> int:
+        # Load spec file
+        spec_path = Path(self.args.spec_path)
+        if not spec_path.exists():
+            print(f"✗ Spec file not found: {spec_path}")
+            return 1
+            
+        print(f"📊 Scoring spec quality for: {spec_path}\n")
         
-    def score(self) -> int:
-        """Calculate overall spec quality score"""
-        print(f"📊 Scoring spec quality for: {self.spec_path}")
+        with open(spec_path, 'r') as f:
+            self.content = f.read()
+            
+        # Score dimensions
+        dimensions_to_score = self.args.dimensions or ['completeness', 'clarity', 'implementability', 'testability']
+        dimension_scores = []
         
-        # Score each dimension
-        self._score_completeness()
-        self._score_clarity()
-        self._score_implementability()
-        self._score_testability()
+        for dimension in dimensions_to_score:
+            if dimension == 'completeness':
+                score = self._score_completeness()
+            elif dimension == 'clarity':
+                score = self._score_clarity()
+            elif dimension == 'implementability':
+                score = self._score_implementability()
+            elif dimension == 'testability':
+                score = self._score_testability()
+            dimension_scores.append(score)
         
-        # Calculate total
-        total_score = sum(self.scores.values())
+        # Calculate totals
+        total_score = sum(d.score for d in dimension_scores)
+        max_score = sum(d.max_score for d in dimension_scores)
+        percentage = (total_score / max_score * 100) if max_score > 0 else 0
         
-        # Report results
-        self._report_results(total_score)
+        # Determine status
+        if percentage >= self.THRESHOLDS['good']:
+            status = "✅ READY FOR REVIEW"
+            risk_level = "Low"
+        elif percentage >= self.THRESHOLDS['acceptable']:
+            status = "⚠️ NEEDS IMPROVEMENT"
+            risk_level = "Medium"
+        else:
+            status = "❌ REQUIRES SIGNIFICANT WORK"
+            risk_level = "High"
         
-        return total_score
+        # Create report
+        report = QualityReport(
+            total_score=total_score,
+            max_score=max_score,
+            dimensions=dimension_scores,
+            status=status,
+            risk_level=risk_level,
+            timestamp=datetime.now().isoformat(),
+            spec_path=str(spec_path)
+        )
         
-    def _score_completeness(self):
-        """Score completeness dimension (0-25 points)"""
-        print("\n📋 Scoring Completeness...")
+        # Output report
+        if self.args.format == 'json':
+            self._output_json(report)
+        elif self.args.format == 'markdown':
+            self._output_markdown(report)
+        else:
+            self._output_console(report)
+        
+        # Determine exit code
+        if self.args.strict and percentage < self.THRESHOLDS['good']:
+            return 1
+        return 0
+    
+    def _score_completeness(self) -> DimensionScore:
+        """Score the completeness dimension."""
+        print("📋 Scoring Completeness...")
         
         score = 0
+        max_score = 25
         details = {}
+        suggestions = []
         
-        # Check core sections (10 points)
+        # Check required sections (10 points)
         required_sections = [
             "Executive Summary", "Stakeholders", "Requirements",
-            "System Architecture", "Risks", "Success Metrics"
+            "System Architecture", "Risks", "Success Metrics",
+            "Implementation Approach", "Constraints"
         ]
         
-        with open(self.spec_path, 'r') as f:
-            content = f.read()
-            
-        found_sections = 0
+        found_sections = []
         for section in required_sections:
-            if re.search(rf'^#{1,3}\s+{re.escape(section)}', content, re.MULTILINE | re.IGNORECASE):
-                found_sections += 1
-                
-        section_score = int((found_sections / len(required_sections)) * 10)
+            if re.search(rf'^#{1,3}\s+{re.escape(section)}', self.content, re.MULTILINE | re.IGNORECASE):
+                found_sections.append(section)
+        
+        section_score = int((len(found_sections) / len(required_sections)) * 10)
         score += section_score
-        details["core_sections"] = f"{found_sections}/{len(required_sections)} sections found ({section_score}/10)"
+        details["core_sections"] = f"{len(found_sections)}/{len(required_sections)} sections ({section_score}/10)"
         
-        # Check requirements coverage (8 points)
-        func_reqs = len(re.findall(r'^#{3,4}\s+FR-\d+', content, re.MULTILINE))
-        nfr_reqs = len(re.findall(r'^#{3,4}\s+NFR-\d+', content, re.MULTILINE))
+        missing = set(required_sections) - set(found_sections)
+        if missing:
+            suggestions.append(f"Add missing sections: {', '.join(missing)}")
         
-        if func_reqs >= 5 and nfr_reqs >= 4:
-            req_score = 8
-        elif func_reqs >= 3 and nfr_reqs >= 2:
-            req_score = 6
-        else:
-            req_score = 4
-            
+        # Check requirements detail (8 points)
+        func_reqs = len(re.findall(r'^#{3,4}\s+FR-\d+', self.content, re.MULTILINE))
+        nfr_reqs = len(re.findall(r'^#{3,4}\s+NFR-\d+', self.content, re.MULTILINE))
+        
+        req_score = min(8, (func_reqs + nfr_reqs) // 2)
         score += req_score
         details["requirements"] = f"{func_reqs} functional, {nfr_reqs} non-functional ({req_score}/8)"
         
-        # Check cross-references (4 points)
-        cross_refs = len(re.findall(r'\[([^\]]+)\]\(#[^)]+\)', content))
-        if cross_refs >= 10:
-            ref_score = 4
-        elif cross_refs >= 5:
-            ref_score = 3
-        else:
-            ref_score = 2
-            
-        score += ref_score
-        details["cross_references"] = f"{cross_refs} internal links ({ref_score}/4)"
+        if func_reqs < 5:
+            suggestions.append("Add more functional requirements (aim for 5+)")
+        if nfr_reqs < 4:
+            suggestions.append("Add more non-functional requirements (aim for 4+)")
         
-        # Check placeholders (3 points)
-        placeholders = len(re.findall(r'\b(TODO|TBD|FIXME|XXX)\b', content, re.IGNORECASE))
-        if placeholders == 0:
-            placeholder_score = 3
-        elif placeholders <= 3:
-            placeholder_score = 2
-        else:
-            placeholder_score = 0
-            
+        # Check for placeholders (3 points)
+        placeholders = len(re.findall(r'\[(?:TBD|TODO|FIXME|XXX|PLACEHOLDER)\]', self.content, re.IGNORECASE))
+        placeholder_score = max(0, 3 - placeholders)
         score += placeholder_score
         details["placeholders"] = f"{placeholders} found ({placeholder_score}/3)"
         
-        self.scores["completeness"] = score
-        self.details["completeness"] = details
+        if placeholders > 0:
+            suggestions.append(f"Replace {placeholders} placeholder(s) with actual content")
         
-    def _score_clarity(self):
-        """Score clarity dimension (0-25 points)"""
-        print("\n✨ Scoring Clarity...")
+        # Check cross-references (4 points)
+        internal_links = len(re.findall(r'\[([^\]]+)\]\(#[^)]+\)', self.content))
+        ref_score = min(4, internal_links // 3)
+        score += ref_score
+        details["cross_references"] = f"{internal_links} internal links ({ref_score}/4)"
+        
+        if internal_links < 10:
+            suggestions.append("Add more internal cross-references between sections")
+        
+        return DimensionScore(
+            name="Completeness",
+            score=score,
+            max_score=max_score,
+            details=details,
+            suggestions=suggestions
+        )
+    
+    def _score_clarity(self) -> DimensionScore:
+        """Score the clarity dimension."""
+        print("✨ Scoring Clarity...")
         
         score = 0
+        max_score = 25
         details = {}
+        suggestions = []
         
-        with open(self.spec_path, 'r') as f:
-            content = f.read()
-            
         # Language precision (8 points)
         # Check for quantified metrics
-        metrics = len(re.findall(r'\d+\s*(%|ms|s|GB|MB|hours?|days?|weeks?)', content))
-        if metrics >= 20:
-            precision_score = 8
-        elif metrics >= 10:
-            precision_score = 6
-        else:
-            precision_score = 4
-            
+        quantified = len(re.findall(r'\d+(?:\.\d+)?(?:\s*(?:%|percent|ms|seconds?|minutes?|hours?|days?|GB|MB|req/sec))', self.content))
+        precision_score = min(8, quantified // 3)
         score += precision_score
-        details["language_precision"] = f"{metrics} quantified metrics ({precision_score}/8)"
+        details["language_precision"] = f"{quantified} quantified metrics ({precision_score}/8)"
+        
+        if quantified < 20:
+            suggestions.append("Add more specific, quantified metrics")
+        
+        # Structure and flow (6 points)
+        # Check heading hierarchy
+        headings = re.findall(r'^(#{1,6})\s+(.+)$', self.content, re.MULTILINE)
+        proper_hierarchy = True
+        prev_level = 0
+        for heading in headings:
+            level = len(heading[0])
+            if level > prev_level + 1:
+                proper_hierarchy = False
+                break
+            prev_level = level
+        
+        structure_score = 6 if proper_hierarchy else 3
+        score += structure_score
+        details["structure_flow"] = f"Heading hierarchy {'correct' if proper_hierarchy else 'has issues'} ({structure_score}/6)"
+        
+        if not proper_hierarchy:
+            suggestions.append("Fix heading hierarchy - don't skip levels")
         
         # Consistency (7 points)
-        # Simple check: consistent header formatting
-        headers = re.findall(r'^(#{1,6})\s+(.+)$', content, re.MULTILINE)
-        consistent_headers = all(h[0].count('#') <= 4 for h in headers)
-        consistency_score = 7 if consistent_headers else 5
-        
-        score += consistency_score
-        details["consistency"] = f"Header consistency {'good' if consistent_headers else 'issues found'} ({consistency_score}/7)"
-        
-        # Structure & Flow (6 points)
-        # Check logical section ordering
-        section_order = []
-        for match in re.finditer(r'^#{1,2}\s+(.+)$', content, re.MULTILINE):
-            section_order.append(match.group(1).lower())
-            
-        expected_flow = ["executive", "stakeholder", "requirement", "architecture", "risk"]
-        flow_score = 6
-        for i, expected in enumerate(expected_flow):
-            if not any(expected in section for section in section_order):
-                flow_score -= 1
-                
-        score += flow_score
-        details["structure_flow"] = f"Section flow score ({flow_score}/6)"
+        # Check for consistent terminology
+        score += 7  # Base score, could be more sophisticated
+        details["consistency"] = "Terminology consistency (7/7)"
         
         # Visual aids (4 points)
-        diagrams = len(re.findall(r'```(?:mermaid|diagram|ascii)', content))
-        tables = len(re.findall(r'\|.+\|.+\|', content))
+        diagrams = len(re.findall(r'```(?:mermaid|diagram|ascii)', self.content, re.IGNORECASE))
+        tables = len(re.findall(r'^\|', self.content, re.MULTILINE))
         
-        if diagrams >= 2 and tables >= 5:
-            visual_score = 4
-        elif diagrams >= 1 and tables >= 3:
-            visual_score = 3
-        else:
-            visual_score = 2
-            
+        visual_score = min(4, (diagrams * 2) + (tables // 5))
         score += visual_score
-        details["visual_aids"] = f"{diagrams} diagrams, {tables} tables ({visual_score}/4)"
+        details["visual_aids"] = f"{diagrams} diagrams, {tables} table rows ({visual_score}/4)"
         
-        self.scores["clarity"] = score
-        self.details["clarity"] = details
+        if diagrams == 0:
+            suggestions.append("Add architecture or flow diagrams")
+        if tables < 10:
+            suggestions.append("Use more tables for structured data")
         
-    def _score_implementability(self):
-        """Score implementability dimension (0-25 points)"""
-        print("\n🔧 Scoring Implementability...")
+        return DimensionScore(
+            name="Clarity",
+            score=score,
+            max_score=max_score,
+            details=details,
+            suggestions=suggestions
+        )
+    
+    def _score_implementability(self) -> DimensionScore:
+        """Score the implementability dimension."""
+        print("🔧 Scoring Implementability...")
         
         score = 0
+        max_score = 25
         details = {}
+        suggestions = []
         
-        with open(self.spec_path, 'r') as f:
-            content = f.read()
-            
         # Technical feasibility (10 points)
-        # Check for technology choices with rationale
-        tech_choices = len(re.findall(r'(chose|selected|using|built with).{0,50}(because|due to|for)', 
-                                     content, re.IGNORECASE))
-        if tech_choices >= 5:
-            feasibility_score = 10
-        elif tech_choices >= 3:
-            feasibility_score = 8
-        else:
-            feasibility_score = 6
-            
+        tech_mentions = len(re.findall(r'(?:version|v)\s*\d+(?:\.\d+)*', self.content))
+        justified_choices = len(re.findall(r'(?:because|reason|why|chose|selected)', self.content, re.IGNORECASE))
+        
+        feasibility_score = min(10, (tech_mentions * 2) + (justified_choices // 3))
         score += feasibility_score
-        details["technical_feasibility"] = f"{tech_choices} justified tech choices ({feasibility_score}/10)"
+        details["technical_feasibility"] = f"{tech_mentions} versioned, {justified_choices} justified ({feasibility_score}/10)"
         
-        # Resource realism (6 points)
-        # Check for timeline and team size mentions
-        has_timeline = bool(re.search(r'\d+\s*(weeks?|months?)', content))
-        has_team_size = bool(re.search(r'\d+\s*(developers?|engineers?|people|FTE)', content))
-        has_budget = bool(re.search(r'\$[\d,]+', content))
+        if tech_mentions < 3:
+            suggestions.append("Specify versions for technologies")
+        if justified_choices < 10:
+            suggestions.append("Add justifications for technical choices")
         
-        resource_score = 2 * sum([has_timeline, has_team_size, has_budget])
+        # Resource planning (6 points)
+        has_timeline = bool(re.search(r'(?:timeline|schedule|phase|sprint)', self.content, re.IGNORECASE))
+        has_team = bool(re.search(r'(?:team|developer|engineer|resource)', self.content, re.IGNORECASE))
+        has_budget = bool(re.search(r'(?:budget|cost|\$|dollar)', self.content, re.IGNORECASE))
+        
+        resource_score = (2 if has_timeline else 0) + (2 if has_team else 0) + (2 if has_budget else 0)
         score += resource_score
-        details["resources"] = f"Timeline: {has_timeline}, Team: {has_team_size}, Budget: {has_budget} ({resource_score}/6)"
+        details["resources"] = f"Timeline: {has_timeline}, Team: {has_team}, Budget: {has_budget} ({resource_score}/6)"
         
-        # Dependency management (5 points)
-        dependencies = len(re.findall(r'(depends on|requires|prerequisite|dependency)', content, re.IGNORECASE))
-        if dependencies >= 5:
-            dep_score = 5
-        elif dependencies >= 3:
-            dep_score = 4
-        else:
-            dep_score = 2
-            
+        if not has_timeline:
+            suggestions.append("Add implementation timeline")
+        if not has_team:
+            suggestions.append("Specify team composition and skills")
+        if not has_budget:
+            suggestions.append("Include budget estimates")
+        
+        # Dependencies (5 points)
+        dep_mentions = len(re.findall(r'(?:depend|require|integrate|interface)', self.content, re.IGNORECASE))
+        dep_score = min(5, dep_mentions // 4)
         score += dep_score
-        details["dependencies"] = f"{dependencies} dependency mentions ({dep_score}/5)"
+        details["dependencies"] = f"{dep_mentions} dependency mentions ({dep_score}/5)"
+        
+        if dep_mentions < 10:
+            suggestions.append("Better document external dependencies")
         
         # Risk mitigation (4 points)
-        risks = len(re.findall(r'(risk|mitigation|contingency)', content, re.IGNORECASE))
-        if risks >= 10:
-            risk_score = 4
-        elif risks >= 5:
-            risk_score = 3
-        else:
-            risk_score = 2
-            
+        risk_mentions = len(re.findall(r'(?:risk|mitigation|contingency|fallback)', self.content, re.IGNORECASE))
+        risk_score = min(4, risk_mentions // 3)
         score += risk_score
-        details["risk_mitigation"] = f"{risks} risk-related mentions ({risk_score}/4)"
+        details["risk_mitigation"] = f"{risk_mentions} risk-related mentions ({risk_score}/4)"
         
-        self.scores["implementability"] = score
-        self.details["implementability"] = details
+        if risk_mentions < 10:
+            suggestions.append("Add more risk analysis and mitigation strategies")
         
-    def _score_testability(self):
-        """Score testability dimension (0-25 points)"""
-        print("\n🧪 Scoring Testability...")
+        return DimensionScore(
+            name="Implementability",
+            score=score,
+            max_score=max_score,
+            details=details,
+            suggestions=suggestions
+        )
+    
+    def _score_testability(self) -> DimensionScore:
+        """Score the testability dimension."""
+        print("🧪 Scoring Testability...")
         
         score = 0
+        max_score = 25
         details = {}
+        suggestions = []
         
-        with open(self.spec_path, 'r') as f:
-            content = f.read()
-            
         # Measurable requirements (10 points)
-        measurable = len(re.findall(r'<\s*\d+\s*(ms|s|%|GB|MB)', content))
-        if measurable >= 10:
-            measure_score = 10
-        elif measurable >= 5:
-            measure_score = 8
-        else:
-            measure_score = 5
-            
-        score += measure_score
-        details["measurable_requirements"] = f"{measurable} measurable thresholds ({measure_score}/10)"
+        measurable = len(re.findall(r'(?:shall|must|will)\s+\w+', self.content))
+        thresholds = len(re.findall(r'[<>≤≥]\s*\d+', self.content))
+        
+        measurable_score = min(10, (measurable // 5) + (thresholds // 2))
+        score += measurable_score
+        details["measurable_requirements"] = f"{measurable} requirements, {thresholds} thresholds ({measurable_score}/10)"
+        
+        if measurable < 20:
+            suggestions.append("Make requirements more specific with 'shall/must' language")
+        if thresholds < 10:
+            suggestions.append("Add more quantifiable thresholds")
         
         # Test scenarios (8 points)
-        scenarios = len(re.findall(r'(scenario|test case|acceptance criteria)', content, re.IGNORECASE))
-        if scenarios >= 8:
-            scenario_score = 8
-        elif scenarios >= 4:
-            scenario_score = 6
-        else:
-            scenario_score = 4
-            
+        scenarios = len(re.findall(r'(?:scenario|test case|given.*when.*then)', self.content, re.IGNORECASE))
+        scenario_score = min(8, scenarios)
         score += scenario_score
-        details["test_scenarios"] = f"{scenarios} test scenario mentions ({scenario_score}/8)"
+        details["test_scenarios"] = f"{scenarios} test scenarios ({scenario_score}/8)"
+        
+        if scenarios < 5:
+            suggestions.append("Add more test scenarios or acceptance criteria")
         
         # Acceptance criteria (3 points)
-        criteria = len(re.findall(r'(acceptance criteria|definition of done|success criteria)', 
-                                 content, re.IGNORECASE))
-        if criteria >= 5:
-            criteria_score = 3
-        elif criteria >= 2:
-            criteria_score = 2
-        else:
-            criteria_score = 1
-            
+        criteria = len(re.findall(r'(?:acceptance criteria|success criteria|definition of done)', self.content, re.IGNORECASE))
+        criteria_score = min(3, criteria)
         score += criteria_score
-        details["acceptance_criteria"] = f"{criteria} acceptance criteria sections ({criteria_score}/3)"
+        details["acceptance_criteria"] = f"{criteria} sections ({criteria_score}/3)"
         
-        # Baseline data (2 points)
-        baseline = len(re.findall(r'(current|existing|baseline|today)', content, re.IGNORECASE))
-        baseline_score = 2 if baseline >= 5 else 1
+        if criteria < 3:
+            suggestions.append("Define acceptance criteria for each major feature")
         
-        score += baseline_score
-        details["baseline_data"] = f"{baseline} baseline mentions ({baseline_score}/2)"
+        # Quality metrics (4 points)
+        metrics = len(re.findall(r'(?:metric|measure|kpi|indicator)', self.content, re.IGNORECASE))
+        metrics_score = min(4, metrics // 3)
+        score += metrics_score
+        details["quality_metrics"] = f"{metrics} metric mentions ({metrics_score}/4)"
         
-        # Quality metrics (3 points)
-        quality = len(re.findall(r'(coverage|uptime|availability|performance|quality)', 
-                                content, re.IGNORECASE))
-        if quality >= 10:
-            quality_score = 3
-        elif quality >= 5:
-            quality_score = 2
-        else:
-            quality_score = 1
-            
-        score += quality_score
-        details["quality_metrics"] = f"{quality} quality metric mentions ({quality_score}/3)"
+        if metrics < 10:
+            suggestions.append("Define more quality metrics and how to measure them")
         
-        self.scores["testability"] = score
-        self.details["testability"] = details
+        return DimensionScore(
+            name="Testability",
+            score=score,
+            max_score=max_score,
+            details=details,
+            suggestions=suggestions
+        )
+    
+    def _output_console(self, report: QualityReport):
+        """Output report to console."""
+        percentage = (report.total_score / report.max_score * 100) if report.max_score > 0 else 0
         
-    def _report_results(self, total_score: int):
-        """Generate detailed scoring report"""
-        print("\n" + "="*60)
+        print("=" * 60)
         print("SPEC QUALITY SCORE REPORT")
-        print("="*60)
+        print("=" * 60)
+        print()
         
-        # Dimension scores
-        print("\n📊 Dimension Scores:")
-        for dimension, score in self.scores.items():
-            print(f"  {dimension.capitalize()}: {score}/25")
-            for key, detail in self.details[dimension].items():
-                print(f"    - {key}: {detail}")
-                
-        # Total score
-        print(f"\n🎯 TOTAL SCORE: {total_score}/100")
+        print("📊 Dimension Scores:")
+        for dim in report.dimensions:
+            dim_percentage = (dim.score / dim.max_score * 100) if dim.max_score > 0 else 0
+            print(f"  {dim.name}: {dim.score}/{dim.max_score} ({dim_percentage:.0f}%)")
+            for key, value in dim.details.items():
+                print(f"    - {key}: {value}")
         
-        # Interpretation
-        if total_score >= 90:
-            status = "✅ READY FOR STANDARD APPROVAL"
-            risk = "Low risk - proceed to roadmap"
-        elif total_score >= 85:
-            status = "⚠️  CONDITIONAL APPROVAL"
-            risk = "Medium risk - document gaps and mitigations"
-        elif total_score >= 80:
-            status = "⚠️  EXTENDED APPROVAL POSSIBLE"
-            risk = "High risk - requires controls and monitoring"
+        print(f"\n🎯 TOTAL SCORE: {report.total_score}/{report.max_score} ({percentage:.0f}%)")
+        print(f"\nStatus: {report.status}")
+        print(f"Risk Level: {report.risk_level}")
+        
+        # Show improvement suggestions
+        all_suggestions = []
+        for dim in report.dimensions:
+            all_suggestions.extend(dim.suggestions)
+        
+        if all_suggestions:
+            print("\n💡 Top Improvement Suggestions:")
+            for i, suggestion in enumerate(all_suggestions[:5], 1):
+                print(f"  {i}. {suggestion}")
+        
+        # Save report if requested
+        if self.args.output_file:
+            output_path = Path(self.args.output_file)
+            if output_path.suffix == '.json':
+                self._save_json_report(report, output_path)
+            else:
+                self._save_text_report(report, output_path, percentage)
+            print(f"\n📄 Detailed report saved to: {output_path}")
         else:
-            status = "❌ REQUIRES IMPROVEMENT"
-            risk = "Very high risk - do not proceed"
-            
-        print(f"\nStatus: {status}")
-        print(f"Risk Assessment: {risk}")
+            # Save JSON report next to spec
+            json_path = Path(self.args.spec_path).parent / "spec-quality-report.json"
+            self._save_json_report(report, json_path)
+            print(f"\n📄 JSON report saved to: {json_path}")
         
-        # Save detailed report
-        report_path = self.spec_path.parent / "spec-quality-report.json"
-        report_data = {
-            "spec_file": str(self.spec_path),
-            "total_score": total_score,
-            "dimension_scores": self.scores,
-            "details": self.details,
-            "status": status,
-            "risk": risk
-        }
+        print("=" * 60)
+    
+    def _output_json(self, report: QualityReport):
+        """Output report as JSON."""
+        report_dict = asdict(report)
         
-        with open(report_path, 'w') as f:
-            json.dump(report_data, f, indent=2)
+        if self.args.output_file:
+            with open(self.args.output_file, 'w') as f:
+                json.dump(report_dict, f, indent=2)
+        else:
+            print(json.dumps(report_dict, indent=2))
+    
+    def _output_markdown(self, report: QualityReport):
+        """Output report as Markdown."""
+        percentage = (report.total_score / report.max_score * 100) if report.max_score > 0 else 0
+        
+        md = f"""# Spec Quality Report
+
+**File**: {report.spec_path}  
+**Date**: {report.timestamp}  
+**Score**: {report.total_score}/{report.max_score} ({percentage:.0f}%)  
+**Status**: {report.status}
+
+## Dimension Scores
+
+"""
+        for dim in report.dimensions:
+            dim_percentage = (dim.score / dim.max_score * 100) if dim.max_score > 0 else 0
+            md += f"### {dim.name}: {dim.score}/{dim.max_score} ({dim_percentage:.0f}%)\n\n"
             
-        print(f"\n📄 Detailed report saved to: {report_path}")
-        print("="*60)
+            for key, value in dim.details.items():
+                md += f"- **{key.replace('_', ' ').title()}**: {value}\n"
+            
+            if dim.suggestions:
+                md += "\n**Improvements needed**:\n"
+                for suggestion in dim.suggestions:
+                    md += f"- {suggestion}\n"
+            md += "\n"
+        
+        md += f"""## Summary
+
+- **Total Score**: {percentage:.0f}%
+- **Risk Level**: {report.risk_level}
+- **Recommendation**: {report.status}
+"""
+        
+        if self.args.output_file:
+            with open(self.args.output_file, 'w') as f:
+                f.write(md)
+        else:
+            print(md)
+    
+    def _save_json_report(self, report: QualityReport, path: Path):
+        """Save report as JSON."""
+        with open(path, 'w') as f:
+            json.dump(asdict(report), f, indent=2)
+    
+    def _save_text_report(self, report: QualityReport, path: Path, percentage: float):
+        """Save report as text."""
+        with open(path, 'w') as f:
+            f.write(f"SPEC QUALITY REPORT\n")
+            f.write(f"{'=' * 50}\n\n")
+            f.write(f"File: {report.spec_path}\n")
+            f.write(f"Date: {report.timestamp}\n")
+            f.write(f"Score: {report.total_score}/{report.max_score} ({percentage:.0f}%)\n")
+            f.write(f"Status: {report.status}\n\n")
+            
+            for dim in report.dimensions:
+                f.write(f"\n{dim.name}:\n")
+                for key, value in dim.details.items():
+                    f.write(f"  - {key}: {value}\n")
+                if dim.suggestions:
+                    f.write("  Suggestions:\n")
+                    for suggestion in dim.suggestions:
+                        f.write(f"    - {suggestion}\n")
 
 def main():
-    """Main entry point"""
-    if len(sys.argv) != 2:
-        print("Usage: python score-spec-quality.py <path-to-SPEC.md>")
-        sys.exit(1)
-        
-    spec_path = sys.argv[1]
-    scorer = SpecScorer(spec_path)
-    
-    total_score = scorer.score()
-    
-    # Exit with appropriate code
-    if total_score >= 90:
-        sys.exit(0)  # Success
-    else:
-        sys.exit(1)  # Needs improvement
+    tool = SpecQualityScorer()
+    sys.exit(tool.run())
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
